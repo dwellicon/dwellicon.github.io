@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dwellicon - Transforming Living Spaces</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #ffffff;
+            color: #000000;
+            overflow-x: hidden;
+        }
+
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            padding: 1.5rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e0e0e0;
+            animation: slideDown 0.8s ease;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            height: 40px;
+            width: auto;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2.5rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #000000;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: #666666;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #000000;
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .hero {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 0 5%;
+            background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            animation: fadeInUp 1s ease;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .slogan {
+            font-size: 1.5rem;
+            color: #666666;
+            margin-bottom: 2rem;
+            font-weight: 300;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 1rem 2.5rem;
+            background: #000000;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .cta-button:hover {
+            background: #333333;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .section {
+            padding: 6rem 5%;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease;
+        }
+
+        .section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+
+        .section-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .content-text {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #333333;
+        }
+
+        .content-text h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            margin-top: 2rem;
+        }
+
+        .image-placeholder {
+            width: 100%;
+            height: 400px;
+            background: #f5f5f5;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999999;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .image-placeholder img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .image-placeholder:hover {
+            transform: scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 3rem;
+            margin-top: 3rem;
+        }
+
+        .team-member {
+            background: #f5f5f5;
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .team-member:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .team-photo {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            margin: 0 auto 1.5rem;
+            overflow: hidden;
+        }
+
+        .team-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .team-member h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .team-role {
+            color: #666666;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+
+        .team-bio {
+            color: #333333;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .location-section {
+            background: #f5f5f5;
+        }
+
+        .location-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: start;
+        }
+
+        .contact-info {
+            background: #ffffff;
+            padding: 2rem;
+            border-radius: 10px;
+        }
+
+        .contact-item {
+            margin-bottom: 1.5rem;
+        }
+
+        .contact-item h4 {
+            font-size: 1rem;
+            color: #666666;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .contact-item p {
+            font-size: 1.1rem;
+            color: #000000;
+        }
+
+        .map-placeholder {
+            width: 100%;
+            height: 400px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666666;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .social-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            background: #000000;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+
+        .social-link:hover {
+            background: #333333;
+            transform: translateY(-3px);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .comparison-card {
+            padding: 2rem;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .comparison-card.us {
+            background: #000000;
+            color: #ffffff;
+            border-color: #000000;
+        }
+
+        .comparison-card h3 {
+            margin-bottom: 1rem;
+            font-size: 1.8rem;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin-top: 1rem;
+        }
+
+        .feature-list li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .feature-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .pricing-card {
+            background: #f5f5f5;
+            padding: 2rem;
+            border-radius: 10px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .pricing-card.featured {
+            background: #000000;
+            color: #ffffff;
+        }
+
+        .price {
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 1rem 0;
+        }
+
+        footer {
+            background: #000000;
+            color: #ffffff;
+            padding: 3rem 5%;
+            text-align: center;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .two-column,
+            .location-grid,
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo-container">
+            <img src="logo.png" alt="Dwellicon Logo" class="logo">
+        </div>
+        <ul class="nav-links">
+            <li><a href="#about">About</a></li>
+            <li><a href="#team">Team</a></li>
+            <li><a href="#services">Services</a></li>
+            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="#location">Location</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Dwellicon</h1>
+            <p class="slogan">Elevate Your Living Experience</p>
+            <a href="#about" class="cta-button">Discover More</a>
+        </div>
+    </section>
+
+    <section id="about" class="section">
+        <div class="section-content">
+            <h2 class="section-title">About Us</h2>
+            <div class="two-column">
+                <div class="content-text">
+                    <p>Founded in 2023, Dwellicon emerged from a simple observation: people deserve living spaces that truly enhance their daily lives. Our founders, having experienced the frustration of generic, uninspired housing solutions, set out to create something different.</p>
+                    <p style="margin-top: 1rem;">What started as a small team of three passionate individuals in a modest Toronto office has grown into a leading innovator in smart living solutions. We believe that where you live should be more than just a place to sleep—it should be a sanctuary that adapts to your needs, inspires your creativity, and simplifies your life.</p>
+                    <p style="margin-top: 1rem;">Today, we've helped over 10,000 residents transform their living experiences, and we're just getting started.</p>
+                </div>
+                <div class="image-placeholder">
+                    <img src="image1.png" alt="Dwellicon Office" style="display: none;" onload="this.style.display='block'; this.parentElement.innerHTML = this.outerHTML;">
+                    <span>Image: Our Story (image1.png)</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="leadership" class="section">
+        <div class="section-content">
+            <h2 class="section-title">Our Leadership Philosophy</h2>
+            <div class="two-column">
+                <div class="image-placeholder">
+                    <img src="image2.png" alt="Leadership" style="display: none;" onload="this.style.display='block'; this.parentElement.innerHTML = this.outerHTML;">
+                    <span>Image: Leadership (image2.png)</span>
+                </div>
+                <div class="content-text">
+                    <p>At Dwellicon, we embrace a collaborative leadership style that puts our customers at the center of every decision. We believe in transparent communication, rapid innovation, and empowering every team member to contribute ideas that benefit our residents.</p>
+                    
+                    <h3>How This Benefits You:</h3>
+                    <p>Our flat organizational structure means faster response times to your needs. When you reach out with a concern or suggestion, it goes directly to decision-makers who can act immediately. We don't believe in bureaucracy—we believe in solutions.</p>
+                    
+                    <p style="margin-top: 1rem;">Every team member is trained to think like an owner, which means everyone is invested in your satisfaction. This creates a culture where innovative ideas flourish and customer needs are anticipated, not just met.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="value" class="section" style="background: #f5f5f5;">
+        <div class="section-content">
+            <h2 class="section-title">What We Offer</h2>
+            <div class="content-text" style="max-width: 900px; margin: 0 auto; text-align: center;">
+                <h3 style="font-size: 2rem; margin-bottom: 1.5rem;">Meeting Both Wants and Needs</h3>
+                <p>Dwellicon addresses a fundamental need: safe, comfortable housing. But we go beyond basic shelter to fulfill the modern desire for smart, integrated living spaces that enhance quality of life.</p>
+                
+                <div class="two-column" style="margin-top: 3rem; text-align: left;">
+                    <div>
+                        <h4 style="font-size: 1.3rem; margin-bottom: 1rem;">The Need:</h4>
+                        <p>Reliable, secure housing with essential amenities, responsive maintenance, and fair pricing in competitive urban markets.</p>
+                    </div>
+                    <div>
+                        <h4 style="font-size: 1.3rem; margin-bottom: 1rem;">The Want:</h4>
+                        <p>Smart home integration, sustainable living features, community-building amenities, and flexible spaces that adapt to your lifestyle.</p>
+                    </div>
+                </div>
+                
+                <p style="margin-top: 2rem; font-size: 1.2rem; font-weight: 500;">Benefits: Lower utility costs through smart systems, increased property value, time savings through automation, and peace of mind with 24/7 monitoring and support.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="team" class="section">
+        <div class="section-content">
+            <h2 class="section-title">Meet Our Team</h2>
+            <div class="team-grid">
+                <div class="team-member">
+                    <div class="team-photo">
+                        <img src="image3.png" alt="Sarah Chen" style="display: none;" onload="this.style.display='block'; this.parentElement.innerHTML = this.outerHTML;">
+                    </div>
+                    <h3>Sarah Chen</h3>
+                    <p class="team-role">Chief Executive Officer</p>
+                    <p class="team-bio">Sarah brings 15 years of experience in real estate technology and urban development. She holds an MBA from Stanford and a Bachelor's in Architecture from MIT. Previously, she led innovation initiatives at a Fortune 500 property management firm, where she pioneered the integration of IoT solutions in residential spaces. Her vision is to make smart living accessible to everyone, not just luxury residents.</p>
+                </div>
+                
+                <div class="team-member">
+                    <div class="team-photo">
+                        <img src="image4.png" alt="Marcus Williams" style="display: none;" onload="this.style.display='block'; this.parentElement.innerHTML = this.outerHTML;">
+                    </div>
+                    <h3>Marcus Williams</h3>
+                    <p class="team-role">Chief Technology Officer</p>
+                    <p class="team-bio">Marcus is a software engineering veteran with a passion for creating user-friendly technology. He earned his Computer Science degree from Carnegie Mellon and spent 10 years at leading tech companies developing AI and machine learning systems. At Dwellicon, he oversees all technical development, ensuring our smart home solutions are both cutting-edge and intuitive. His motto: "Technology should simplify life, not complicate it."</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="competition" class="section" style="background: #f5f5f5;">
+        <div class="section-content">
+            <h2 class="section-title">Why Choose Dwellicon</h2>
+            <div class="comparison-grid">
+                <div class="comparison-card">
+                    <h3>Traditional Competitors</h3>
+                    <ul class="feature-list">
+                        <li>Basic amenities only</li>
+                        <li>Slow maintenance response (24-48 hours)</li>
+                        <li>Limited technology integration</li>
+                        <li>One-size-fits-all approach</li>
+                        <li>Standard community features</li>
+                        <li>Annual rent increases</li>
+                    </ul>
+                </div>
+                
+                <div class="comparison-card us">
+                    <h3>Dwellicon Difference</h3>
+                    <ul class="feature-list">
+                        <li>Smart home integration included</li>
+                        <li>2-hour maintenance guarantee</li>
+                        <li>AI-powered energy optimization</li>
+                        <li>Customizable living spaces</li>
+                        <li>Curated community events & co-working</li>
+                        <li>Transparent, predictable pricing</li>
+                        <li>Dedicated resident success manager</li>
+                        <li>Sustainability-first design</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="content-text" style="margin-top: 3rem; text-align: center;">
+                <p style="font-size: 1.2rem; font-weight: 500;">While others offer places to live, we offer a lifestyle upgrade. Our integrated approach means you're not just renting an apartment—you're joining a community designed for modern living.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="target" class="section">
+        <div class="section-content">
+            <h2 class="section-title">Who We Serve</h2>
+            <div class="content-text" style="max-width: 900px; margin: 0 auto;">
+                <p style="font-size: 1.2rem; text-align: center; margin-bottom: 2rem;">While Dwellicon welcomes all residents, our services are especially designed for:</p>
+                
+                <div class="two-column" style="margin-top: 2rem;">
+                    <div>
+                        <h3>Young Professionals (25-40)</h3>
+                        <p>Tech-savvy individuals who value convenience, sustainability, and community. They work remotely or hybrid, appreciate smart home features, and want living spaces that support their dynamic lifestyles.</p>
+                    </div>
+                    <div>
+                        <h3>Small Families & Couples</h3>
+                        <p>Those seeking safe, modern environments with flexible spaces that grow with their needs. They prioritize quality, reliability, and amenities that enhance family life without the commitment of homeownership.</p>
+                    </div>
+                </div>
+                
+                <p style="margin-top: 2rem; text-align: center; font-style: italic; color: #666;">Our typical resident values innovation, sustainability, and community. They're willing to invest in quality living experiences that save time and enhance daily life.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="pricing" class="section" style="background: #f5f5f5;">
+        <div class="section-content">
+            <h2 class="section-title">Flexible Pricing Options</h2>
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <h3>Studio Smart</h3>
+                    <p class="price">$1,850<span style="font-size: 1rem;">/mo</span></p>
+                    <ul class="feature-list" style="text-align: left;">
+                        <li>450-550 sq ft</li>
+                        <li>Basic smart home package</li>
+                        <li>Shared amenities access</li>
+                        <li>Standard maintenance</li>
+                    </ul>
+                    <a href="#contact" class="cta-button" style="margin-top: 1.5rem; display: inline-block; background: #fff; color: #000;">Learn More</a>
+                </div>
+                
+                <div class="pricing-card featured">
+                    <h3>One Bedroom Plus</h3>
+                    <p class="price">$2,650<span style="font-size: 1rem;">/mo</span></p>
+                    <ul class="feature-list" style="text-align: left;">
+                        <li>650-750 sq ft</li>
+                        <li>Premium smart home system</li>
+                        <li>Priority maintenance</li>
+                        <li>Dedicated parking</li>
+                        <li>Co-working access</li>
+                    </ul>
+                    <a href="#contact" class="cta-button" style="margin-top: 1.5rem; display: inline-block;">Most Popular</a>
+                </div>
+                
+                <div class="pricing-card">
+                    <h3>Two Bedroom Elite</h3>
+                    <p class="price">$3,850<span style="font-size: 1rem;">/mo</span></p>
+                    <ul class="feature-list" style="text-align: left;">
+                        <li>950-1100 sq ft</li>
+                        <li>Full smart home integration</li>
+                        <li>2-hour maintenance guarantee</li>
+                        <li>2 parking spots</li>
+                        <li>Concierge services</li>
+                    </ul>
+                    <a href="#contact" class="cta-button" style="margin-top: 1.5rem; display: inline-block; background: #fff; color: #000;">Learn More</a>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 3rem;">
+                <p style="font-size: 1.1rem; font-weight: 500; margin-bottom: 1rem;">Special Promotion: First Month 50% Off</p>
+                <p style="color: #666;">Sign a 12-month lease by January 31st and receive 50% off your first month's rent plus waived application fees.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="location" class="section location-section">
+        <div class="section-content">
+            <h2 class="section-title">Visit Us</h2>
+            <div class="location-grid">
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <h4>Address</h4>
+                        <p>250 King Street West, Suite 400<br>Toronto, ON M5V 3K2</p>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <h4>Phone</h4>
+                        <p>(416) 555-DWELL<br>(416) 555-3935</p>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <h4>Email</h4>
+                        <p>hello@dwellicon.com<br>leasing@dwellicon.com</p>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <h4>Hours of Operation</h4>
+                        <p>Monday - Friday: 9:00 AM - 7:00 PM<br>
+                        Saturday: 10:00 AM - 5:00 PM<br>
+                        Sunday: 12:00 PM - 4:00 PM</p>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <h4>Emergency Maintenance</h4>
+                        <p>24/7: (416) 555-HELP</p>
+                    </div>
+                </div>
+                
+                <div class="map-placeholder">
+                    <p>Google Maps Embed (100m scale)<br>Coordinates: 43.6465° N, 79.3891° W</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="social" class="section">
+        <div class="section-content">
+            <h2 class="section-title">Connect With Us</h2>
+            <div class="social-links">
+                <a href="https://instagram.com" target="_blank" class="social-link">
+                    <span>📷</span> Instagram
+                </a>
+                <a href="https://linkedin.com" target="_blank" class="social-link">
+                    <span>💼</span> LinkedIn
+                </a>
+                <a href="https://twitter.com" target="_blank" class="social-link">
+                    <span>🐦</span> Twitter
+                </a>
+            </div>
+            <p style="text-align: center; margin-top: 2rem; color: #666;">Follow us for design inspiration, resident stories, and exclusive offers</p>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2026 Dwellicon. All rights reserved.</p>
+        <p style="margin-top: 1rem; font-size: 0.9rem; color: #999;">Elevate Your Living Experience</p>
+    </footer>
+
+    <script>
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // Scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.section').forEach(section => {
+            observer.observe(section);
+        });
+
+        // Navbar scroll effect
+        let lastScroll = 0;
+        window.addEventListener('scroll', () => {
+            const navbar = document.querySelector('.navbar');
+            const currentScroll = window.pageYOffset;
+            
+            if (currentScroll > 100) {
+                navbar.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+            } else {
+                navbar.style.boxShadow = 'none';
+            }
+            
+            lastScroll = currentScroll;
+        });
+
+        // Image hover effects
+        document.querySelectorAll('.image-placeholder').forEach(img => {
+            img.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.02)';
+            });
+            img.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body>
+</html>
