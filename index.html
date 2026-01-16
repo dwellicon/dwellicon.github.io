@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dwellicon | Elevate Your Living Experience</title></head>
+    <script src="src/script.js"></script>
+    <link rel="stylesheet" href="src/style.css">
+<body>
+    <nav class="navbar">
+        <div class="logo-container">
+            <img src="logo.png" alt="Dwellicon Logo" class="logo">
+        </div>
+        <div class="nav-center">
+            <a href="#" class="nav-button">Features</a>
+            <a href="#pricing" class="nav-button">Pricing</a>
+            <a href="#" class="nav-button primary">Try For Free</a>
+        </div>
+        <div class="hamburger" onclick="toggleMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </nav>
+
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="#about">About</a>
+        <a href="#team">Team</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#location">Contact</a>
+        <a href="#" style="color: #000; font-weight: 700;">Try For Free</a>
+    </div>
+
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Dwellicon</h1>
+            <p class="slogan">Elevate Your Living Experience</p>
+            <a href="#pricing" class="cta-button">Discover More</a>
+        </div>
+        <div class="hero-image">
+            <img src="image5.png" alt="Dwellicon AI Assistant" style="display: none;" onload="this.style.display='block'; this.parentElement.innerHTML = this.outerHTML;">
+            <span>Hero Image (image5.png)</span>
+        </div>
+    </section>
+
+    <section id="about" class="section">
+        <div class="section-content">
+            <h2 class="section-title">About Us</h2>
+            <div class="two-column">
+                <div class="content-text">
+                    <p>Founded in early 2024, Dwellicon was born from a frustrating weekend of endless real estate searches. Our founders, Alexandra Rodriguez and James Park, spent hours clicking through dozens of websites, opening countless tabs, and losing track of promising properties in the chaos.</p>
+                    <p style="margin-top: 1rem;">"There has to be a better way," Alex said to James over coffee that Sunday afternoon. They realized that while AI was transforming every industry, house hunting was still stuck in the stone age of manual browsing.</p>
+                    <p style="margin-top: 1rem;">Six months later, Dwellicon launched with a simple mission: let AI do the heavy lifting so you can focus on what matters—finding your dream home. Today, we've helped over 50,000 users discover their perfect property, saving them countless hours and endless frustration.</p>
+                </div>
+                <div class="image-placeholder">
+                    <img src="image1.png" alt="Dwellicon Story" style="display: none;" onload="this.style.display='block'; this.parentElement.innerHTML = this.outerHTML;">
+                    <span>Image: Our Story (image1.png)</span>
+                </div>
+            </div>
+
+            <div class="stats-grid" style="margin-top: 4rem;">
+                <div class="stat-card">
+                    <div class="stat-number">50K+</div>
+                    <div class="stat-label">Happy Users</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">1M+</div>
+                    <div class="stat-label">Properties Analyzed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">98%</div>
+                    <div class="stat-label">Satisfaction Rate</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">24/7</div>
+                    <div class="stat-label">AI Support</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="leadership" class="section" style="background: linear-gradient(135deg, #f8f8f8 0%, #f0f0f0 100%);">
+        <div class="section-content">
+            <h2 class="section-title">Our Leadership Philosophy</h2>
+            <div class="two-column">
+                <div class="image-placeholder">
+                    <img src="image2.png" alt="Leadership" style="display: none;" onload="this.style.display='block'; this.parentElement.innerHTML = this.outerHTML;">
+                    <span>Image: Leadership (image2.png)</span>
+                </div>
+                <div class="content-text">
+                    <p>At Dwellicon, we embrace an agile, user-first leadership approach. Every decision we make starts with a simple question: "Does this make house hunting easier for our users?"</p>
+                    
+                    <h3>How This Benefits You:</h3>
+                    <p>Our flat organizational structure means rapid innovation. When users suggest a feature in the morning, our team can have it in development by afternoon. No bureaucracy, no endless approval chains—just solutions.</p>
+                    
+                    <p style="margin-top: 1rem;">We practice radical transparency. Our product roadmap is public, our response times are tracked, and every team member has direct access to user feedback. This creates a culture where your needs drive our priorities, not the other way around.</p>
+
+                    <p style="margin-top: 1rem;">Most importantly, we empower our AI with the same values. Our algorithms prioritize your preferences, learn from your feedback, and adapt to your unique search style—because the best leadership knows when to listen.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="value" class="section">
+        <div class="section-content">
+            <h2 class="section-title">Want or Need? Both.</h2>
+            <div class="content-text" style="max-width: 900px; margin: 0 auto; text-align: center;">
+                <p style="font-size: 1.2rem; margin-bottom: 2rem;">Finding a home is a fundamental need, but finding the right home efficiently is a modern want that Dwellicon delivers.</p>
+                
+                <div class="two-column" style="margin-top: 3rem; text-align: left;">
+                    <div>
+                        <h3 style="font-size: 1.3rem; margin-bottom: 1rem;">The Need:</h3>
+                        <p>Everyone needs housing. Whether you're buying your first home, upgrading for a growing family, or downsizing for retirement, finding the right property is essential to your quality of life.</p>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 1.3rem; margin-bottom: 1rem;">The Want:</h3>
+                        <p>You want this process to be efficient, stress-free, and personalized. You want to see only properties that match your criteria, not waste hours scrolling through irrelevant listings.</p>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 3rem; background: linear-gradient(135deg, #f5f5f5 0%, #ececec 100%); padding: 3rem; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.08);">
+                    <h3 style="font-size: 1.7rem; margin-bottom: 1.5rem; font-weight: 700;">Benefits You'll Experience:</h3>
+                    <p style="margin-bottom: 1rem; font-size: 1.1rem;">✓ Save 10+ hours per week on property searches</p>
+                    <p style="margin-bottom: 1rem; font-size: 1.1rem;">✓ Never miss a perfect listing with instant AI alerts</p>
+                    <p style="margin-bottom: 1rem; font-size: 1.1rem;">✓ Make informed decisions with comprehensive market insights</p>
+                    <p style="font-size: 1.1rem;">✓ Reduce search stress with organized, personalized results</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="team" class="section" style="background: linear-gradient(135deg, #f8f8f8 0%, #f0f0f0 100%);">
+        <div class="section-content">
+            <h2 class="section-title">Meet Our Team</h2>
+            <div class="team-grid">
+                <div class="team-member">
+                    <div class="team-photo">
+                        <img src="image3.png" alt="Alexandra Rodriguez" style="display: none;" onload="this.style.display='block'; this.parentElement.innerHTML = this.outerHTML;">
+                    </div>
+                    <h3>Alexandra Rodriguez</h3>
+                    <p class="team-role">Co-Founder & CEO</p>
+                    <p class="team-bio">Alexandra brings 12 years of experience in AI and machine learning from her time at Google and Tesla. She holds a Ph.D. in Computer Science from Stanford, where her research focused on natural language processing and recommendation systems. After experiencing the pain of house hunting firsthand, she left her role as Senior ML Engineer to build Dwellicon. Her vision is simple: make AI accessible and useful for life's biggest decisions.</p>
+                </div>
+                
+                <div class="team-member">
+                    <div class="team-photo">
+                        <img src="image4.png" alt="James Park" style="display: none;" onload="this.style.display='block'; this.parentElement.innerHTML = this.outerHTML;">
+                    </div>
+                    <h3>James Park</h3>
+                    <p class="team-role">Co-Founder & CTO</p>
+                    <p class="team-bio">James is a full-stack engineer and product designer with a passion for elegant user experiences. He earned his degree in Software Engineering from MIT and spent 8 years building consumer products at Airbnb and Zillow, giving him unique insight into the real estate tech space. At Dwellicon, he oversees all technical architecture and product design, ensuring our platform is both powerful and intuitive. His motto: "If it takes more than three clicks, we've failed."</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="competition" class="section">
+        <div class="section-content">
+            <h2 class="section-title">Why Choose Dwellicon</h2>
+            <p class="section-subtitle">While platforms like Zillow and Realtor.com offer property listings, they still require hours of manual searching and filtering.</p>
+            <div class="comparison-grid">
+                <div class="comparison-card">
+                    <h3>Traditional Platforms</h3>
+                    <p style="margin-bottom: 1rem; color: #666;">Zillow, Realtor.com, Redfin</p>
+                    <ul class="feature-list">
+                        <li>Manual search across multiple websites</li>
+                        <li>Basic filtering (price, beds, baths)</li>
+                        <li>Hours spent browsing irrelevant listings</li>
+                        <li>No personalized recommendations</li>
+                        <li>Email alerts for broad searches only</li>
+                        <li>Limited market insights</li>
+                    </ul>
+                </div>
+                
+                <div class="comparison-card us">
+                    <h3>Dwellicon Advantage</h3>
+                    <p style="margin-bottom: 1rem;">AI-Powered Intelligence</p>
+                    <ul class="feature-list">
+                        <li>AI searches 1,000+ listings in seconds</li>
+                        <li>Advanced AI filtering (commute time, school ratings, neighborhood vibe)</li>
+                        <li>Only see properties matching your preferences</li>
+                        <li>Machine learning adapts to your taste</li>
+                        <li>Instant alerts for perfect matches</li>
+                        <li>Comprehensive market analytics & trends</li>
+                        <li>Natural language search ("3BR near parks with home office space")</li>
+                        <li>Save 10+ hours per week</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="target" class="section" style="background: linear-gradient(135deg, #f8f8f8 0%, #f0f0f0 100%);">
+        <div class="section-content">
+            <h2 class="section-title">Who We Serve</h2>
+            <div class="content-text" style="max-width: 900px; margin: 0 auto;">
+                <p style="font-size: 1.2rem; text-align: center; margin-bottom: 2rem;">While Dwellicon helps anyone searching for property, our platform is especially valuable for:</p>
+                
+                <div class="two-column" style="margin-top: 2rem;">
+                    <div>
+                        <h3>Busy Professionals (28-45)</h3>
+                        <p>Tech-savvy individuals who value their time and want efficient solutions. They're comfortable with AI, appreciate data-driven insights, and need property searches that fit around demanding careers and family commitments.</p>
+                    </div>
+                    <div>
+                        <h3>First-Time Home Buyers</h3>
+                        <p>Those navigating the overwhelming world of real estate for the first time. They need guidance, comprehensive information, and a streamlined process that demystifies home buying without the pressure of traditional agent relationships.</p>
+                    </div>
+                </div>
+                
+                <p style="margin-top: 2rem; text-align: center; font-style: italic; color: #666;">Our typical user values efficiency, appreciates technology, and wants to make informed decisions backed by data—not just gut feelings.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="how-it-works" class="section">
+        <div class="section-content">
+            <h2 class="section-title">See Dwellicon In Action</h2>
+            <p class="section-subtitle">Watch how our AI transforms the house hunting experience in under 2 minutes</p>
+            <div class="video-placeholder">
+                <span>Product Demo Video Placeholder</span>
+            </div>
+            <p style="text-align: center; margin-top: 2rem; color: #666; font-size: 1.1rem;">Video: "How Dwellicon Finds Your Dream Home in 3 Simple Steps"</p>
+        </div>
+    </section>
+
+    <section id="pricing" class="section" style="background: linear-gradient(135deg, #f8f8f8 0%, #f0f0f0 100%);">
+        <div>
+            <h2 class="section-title">Find Your Perfect Home</h2>
+            <p class="section-subtitle">Let AI do the heavy lifting. Browse hundreds of real estate listings tailored to your preferences in seconds.</p>
+            
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <span class="badge">Try It Free</span>
+                    <h3 class="plan-name">7-Day Free Trial</h3>
+                    <p class="price">$0</p>
+                    <p class="price-subtext">No credit card required</p>
+                    <ul class="feature-list">
+                        <li>Unlimited real estate queries</li>
+                        <li>Browse from over 100+ real estate listings</li>
+                        <li>Connect directly to property listings</li>
+                        <li>AI-powered recommendations</li>
+                        <li>Save favorite properties</li>
+                    </ul>
+                    <a href="#" class="plan-button">Start Free Trial</a>
+                </div>
+                
+                <div class="pricing-card featured">
+                    <span class="badge">Most Popular</span>
+                    <h3 class="plan-name">Monthly Plan</h3>
+                    <p class="price">$29<span style="font-size: 1rem;">/mo</span></p>
+                    <p class="price-subtext">Billed monthly</p>
+                    <ul class="feature-list">
+                        <li>Unlimited real estate queries</li>
+                        <li>Browse from over 1,000+ real estate listings</li>
+                        <li>Connect directly to property listings</li>
+                        <li>Priority AI processing (3x faster)</li>
+                        <li>Advanced filtering options (commute time, schools, amenities)</li>
+                        <li>Instant property alerts via SMS & email</li>
+                        <li>Market insights & price trend analytics</li>
+                        <li>Dedicated customer support (24/7 chat)</li>
+                    </ul>
+                    <a href="#" class="plan-button">Get Started</a>
+                </div>
+                
+                <div class="pricing-card">
+                    <span class="badge">Best Value</span>
+                    <h3 class="plan-name">Yearly Plan</h3>
+                    <p class="price">$249<span style="font-size: 1rem;">/yr</span></p>
+                    <p class="price-subtext">Save $99/year · 2 months free</p>
+                    <ul class="feature-list">
+                        <li>Everything in Monthly, plus:</li>
+                        <li>12 months for the price of 10</li>
+                        <li>Exclusive early access to new listings (up to 24hrs before public)</li>
+                        <li>Personalized neighborhood reports & insights</li>
+                        <li>Virtual tour scheduling assistance</li>
+                        <li>Price drop notifications & investment potential alerts</li>
+                        <li>Priority customer support (dedicated account manager)</li>
+                        <li>Unlimited saved searches & property collections</li>
+                    </ul>
+                    <a href="#" class="plan-button">Get Started</a>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 4rem; padding: 3rem; background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%); border-radius: 25px; max-width: 900px; margin-left: auto; margin-right: auto; box-shadow: 0 15px 50px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.05);">
+                <h3 style="font-size: 2rem; margin-bottom: 1rem; font-weight: 700;">🎉 Limited Time Offer</h3>
+                <p style="font-size: 1.2rem; color: #333; line-height: 1.6;">Sign up for any paid plan before January 31st and get an additional month free + priority onboarding with our AI specialists!</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="location" class="section location-section">
+        <div class="section-content">
+            <h2 class="section-title">Visit Us</h2>
+            <div class="location-grid">
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <h4>Headquarters</h4>
+                        <p>350 Bay Street, Suite 1200<br>Toronto, ON M5H 2S6<br>Canada</p>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <h4>Phone</h4>
+                        <p>Main: (416) 555-3935<br>Support: 1-800-DWELL-AI</p>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <h4>Email</h4>
+                        <p>General: hello@dwellicon.com<br>Support: support@dwellicon.com<br>Press: press@dwellicon.com</p>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <h4>Office Hours</h4>
+                        <p>Monday - Friday: 9:00 AM - 6:00 PM EST<br>
+                        Saturday: 10:00 AM - 4:00 PM EST<br>
+                        Sunday: Closed</p>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <h4>24/7 Customer Support</h4>
+                        <p>Live Chat: Available in-app<br>
+                        Email: Always monitored<br>
+                        Response Time: < 2 hours</p>
+                    </div>
+                </div>
+                
+                <div class="map-container">
+                    <iframe 
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2886.8!2d-79.3811!3d43.6488!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDPCsDM4JzU1LjciTiA3OcKwMjInNTIuMCJX!5e0!3m2!1sen!2sca!4v1234567890!5m2!1sen!2sca"
+                        allowfullscreen="" 
+                        loading="lazy" 
+                        referrerpolicy="no-referrer-when-downgrade">
+                    </iframe>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="social" class="section">
+        <div class="section-content">
+            <h2 class="section-title">Connect With Us</h2>
+            <p class="section-subtitle">Follow for daily property tips, market insights, and success stories</p>
+            <div class="social-links">
+                <a href="https://instagram.com/dwellicon" target="_blank" class="social-link">
+                    <span>📷</span> Instagram
+                </a>
+                <a href="https://linkedin.com/company/dwellicon" target="_blank" class="social-link">
+                    <span>💼</span> LinkedIn
+                </a>
+                <a href="https://twitter.com/dwellicon" target="_blank" class="social-link">
+                    <span>🐦</span> Twitter
+                </a>
+                <a href="https://tiktok.com/@dwellicon" target="_blank" class="social-link">
+                    <span>🎵</span> TikTok
+                </a>
+            </div>
+            <p style="text-align: center; margin-top: 2.5rem; color: #666; font-size: 1.1rem;">Join 50,000+ users finding their dream homes with AI</p>
+        </div>
+    </section>
+
+    <footer>
+        <p style="font-size: 1.1rem;">&copy; 2026 Dwellicon Inc. All rights reserved.</p>
+        <p style="margin-top: 1rem; font-size: 1rem; color: #999;">Elevate Your Living Experience</p>
+        <div style="margin-top: 2.5rem; display: flex; gap: 2.5rem; justify-content: center; flex-wrap: wrap;">
+            <a href="#" style="color: #999; text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#999'">Privacy Policy</a>
+            <a href="#" style="color: #999; text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#999'">Terms of Service</a>
+            <a href="#" style="color: #999; text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#999'">Contact</a>
+            <a href="#" style="color: #999; text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#999'">Careers</a>
+        </div>
+    </footer>
