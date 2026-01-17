@@ -1045,17 +1045,23 @@
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
         }
 
+        /* The container box */
         .hero-image1 {
-                width: 400px;
-                height: 300px;
-                object-fit: cover;    /* <--- THIS IS THE MAGIC LINE */
-                object-position: center; /* Centers the focus of the image */
-                
-                /* Keep your other styles below */
-                border-radius: 20px;
-                display: block;
-                box-shadow: 0 15px 45px rgba(0,0,0,0.1);
-            }
+            width: 400px;
+            height: 300px;
+            border-radius: 20px;
+            overflow: hidden; /* This chops off the parts of the image that stick out */
+            box-shadow: 0 15px 45px rgba(0,0,0,0.1);
+        }
+        
+        /* The actual big image file */
+        .hero-image1 img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* This scales the 2000px down to fit perfectly */
+            object-position: center;
+            display: block;
+        }
 
         
         
@@ -1214,9 +1220,8 @@
             <a href="#pricing" class="cta-button">Discover More</a>
         </div>
         <div class="hero-image1">
-            <img src="icon/image5.png" alt="Dwellicon AI Assistant" style="display: none;" onload="this.style.display='block'; this.parentElement.innerHTML = this.outerHTML;">
-            <span>Hero Image (image5.png)</span>
-        </div>
+        <img src="icon/image5.png" alt="Dwellicon AI Assistant">
+</div>
     </section>
 
     <section id="about" class="section">
