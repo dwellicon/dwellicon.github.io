@@ -1045,49 +1045,55 @@
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
         }
 
-                      .hero-image1 {
-            position: relative; /* This is the anchor for the glow */
-            width: 100%;
-            max-width: 800px;
-            aspect-ratio: 4 / 3;
-            border-radius: 20px;
-            /* We don't use overflow: hidden here anymore because it would cut off the glow */
-        }
-        
-        /* The flashy rainbow border layer */
-        .hero-image1::before {
-            content: "";
-            position: absolute;
-            top: -5px;    /* How thick the border is */
-            left: -5px;
-            right: -5px;
-            bottom: -5px;
-            z-index: -1; /* Puts it behind the image */
-            background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
-            background-size: 400%; /* Makes the gradient huge so we can "move" through it */
-            border-radius: 25px;   /* Slightly larger than image radius */
-            filter: blur(8px);    /* This creates the "glow" effect */
-            animation: rainbow-glow 20s linear infinite;
-        }
-        
-        /* The actual picture - needs its own border-radius and overflow now */
-        .hero-image1 img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-            border-radius: 20px;
-            background: white; /* Prevents the glow from bleeding through transparent parts */
-            position: relative;
-            z-index: 1;
-        }
-        
-        /* The animation that moves the colors */
-        @keyframes rainbow-glow {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
+            .hero-image1 {
+                position: relative;
+                width: 100%;
+                max-width: 800px;
+                aspect-ratio: 4 / 3;
+                /* Remove overflow:hidden from here! */
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1; /* This ensures the whole "sandwich" stays above the page background */
+            }
+            
+            /* THE FLASHY RAINBOW LAYER */
+            .hero-image1::before {
+                content: "";
+                position: absolute;
+                /* Make this layer slightly larger than the image to see the "border" */
+                top: -8px; 
+                left: -8px;
+                right: -8px;
+                bottom: -8px;
+                
+                background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+                background-size: 400%;
+                z-index: -1; /* Sits behind the image, but stays inside the hero-image1 container */
+                filter: blur(12px); /* Increased blur for a stronger "flashy" glow */
+                border-radius: 28px;
+                animation: rainbow-glow 20s linear infinite;
+                opacity: 1;
+            }
+            
+            /* THE IMAGE ITSELF */
+            .hero-image1 img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block;
+                border-radius: 20px;
+                position: relative;
+                z-index: 2; /* Forces the image to be the top layer */
+                border: 2px solid rgba(255,255,255,0.1); /* Slight edge to make it look premium */
+            }
+            
+            /* THE ANIMATION */
+            @keyframes rainbow-glow {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
 
         
         
