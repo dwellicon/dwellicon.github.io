@@ -1045,14 +1045,14 @@
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
         }
 
-             /* This controls the "Frame" */
             .hero-image1 {
-                width: 100%;          /* Fills its half of the grid */
-                max-width: 700px;     /* Limits how wide it can get */
-                height: 500px;        /* FORCES a maximum height so it doesn't grow forever */
-                margin-left: auto;    /* Keeps it aligned nicely */
-                overflow: hidden;
+                width: 100%;
+                max-width: 850px;      /* Just change this one number to resize */
+                aspect-ratio: 4 / 3;   /* This forces the height to calculate itself! */
+                height: auto;          /* Overrides the old fixed height */
+                
                 border-radius: 20px;
+                overflow: hidden;
             }
             
             /* This controls the "Picture" */
