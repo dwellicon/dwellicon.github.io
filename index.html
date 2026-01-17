@@ -1045,15 +1045,17 @@
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
         }
 
-                .hero-image1 {
-            width: 400px;         /* Forced width */
-            height: 300px;        /* Forced height */
-            object-fit: cover;    /* Prevents stretching */
-            border-radius: 20px;  /* Keeps it pretty */
-            display: block;
-            margin: 2rem 0;       /* Adds some space around it */
-            box-shadow: 0 15px 45px rgba(0,0,0,0.1);
-        }
+        .hero-image1 {
+                width: 400px;
+                height: 300px;
+                object-fit: cover;    /* <--- THIS IS THE MAGIC LINE */
+                object-position: center; /* Centers the focus of the image */
+                
+                /* Keep your other styles below */
+                border-radius: 20px;
+                display: block;
+                box-shadow: 0 15px 45px rgba(0,0,0,0.1);
+            }
 
         
         
