@@ -1045,22 +1045,22 @@
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
         }
 
+              /* THE FRAME */
             .hero-image1 {
                 width: 100%;
-                max-width: 1000px;      /* Just change this one number to resize */
-                aspect-ratio: 4 / 3;   /* This forces the height to calculate itself! */
-                height: auto;          /* Overrides the old fixed height */
-                
-                border-radius: 20px;
+                max-width: 950px;     /* Increase this to make the whole thing bigger */
+                aspect-ratio: 4 / 3;  /* Keeps the box perfectly shaped for your image */
                 overflow: hidden;
+                border-radius: 20px;
+                box-shadow: 0 15px 45px rgba(0,0,0,0.1);
             }
             
-            /* This controls the "Picture" */
+            /* THE PICTURE (KEEP THIS!) */
             .hero-image1 img {
                 width: 100%;
                 height: 100%;
-                object-fit: contain;  /* Shows the WHOLE 2304px image inside that 500px height */
-                background: #f9f9f9;  /* Optional: adds a slight tint to empty side-bars if they appear */
+                object-fit: cover;    /* Use 'cover' now that the frame is the same 4:3 shape */
+                display: block;
             }
 
         
