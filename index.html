@@ -1045,6 +1045,18 @@
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
         }
 
+                .hero-image1 {
+            width: 400px;         /* Forced width */
+            height: 300px;        /* Forced height */
+            object-fit: cover;    /* Prevents stretching */
+            border-radius: 20px;  /* Keeps it pretty */
+            display: block;
+            margin: 2rem 0;       /* Adds some space around it */
+            box-shadow: 0 15px 45px rgba(0,0,0,0.1);
+        }
+
+        
+        
         @keyframes slideDown {
             from {
                 transform: translateY(-100%);
@@ -1132,16 +1144,6 @@
                 height: auto;
                 padding: 8rem 5% 4rem;
                 gap: 3rem;
-            }
-
-            .hero-image1 {
-                width: 400px;        /* The width you wanted */
-                height: 300px;       /* Keeps the 4:3 ratio (300 is 75% of 400) */
-                object-fit: cover;   /* Ensures it fills the box without stretching */
-                border-radius: 20px; /* Matches the style of the rest of your site */
-                display: block;      /* Helps with centering */
-                margin: 0 auto;      /* Centers it if it's inside a column */
-                box-shadow: 0 15px 45px rgba(0,0,0,0.1); /* Adds depth */
             }
 
              .hero-image {
