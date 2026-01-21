@@ -8,6 +8,206 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
+
+    .browse-section {
+        padding: 8rem 5%;
+        background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+        color: white;
+        position: relative;
+    }
+
+    .browse-section .section-title {
+        font-size: 3.5rem;
+        font-weight: 800;
+        margin-bottom: 1.5rem;
+        text-align: center;
+        letter-spacing: -0.02em;
+        background: linear-gradient(135deg, #ffffff 0%, #cccccc 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .browse-section .section-subtitle {
+        font-size: 1.3rem;
+        color: #e0e0e0;
+        text-align: center;
+        margin-bottom: 4rem;
+        max-width: 750px;
+        margin-left: auto;
+        margin-right: auto;
+        line-height: 1.6;
+        font-weight: 300;
+    }
+
+    .browse-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4rem;
+        max-width: 1300px;
+        margin: 0 auto;
+    }
+
+    .browse-card {
+        background: rgba(255,255,255,0.05);
+        padding: 3rem;
+        border-radius: 20px;
+        border: 1px solid rgba(255,255,255,0.1);
+        backdrop-filter: blur(10px);
+    }
+
+    .browse-card h3 {
+        font-size: 2rem;
+        margin-bottom: 1.5rem;
+        color: white;
+        font-weight: 700;
+    }
+
+    .browse-card ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    .browse-card li {
+        margin-bottom: 1.5rem;
+        padding-left: 2rem;
+        position: relative;
+        font-size: 1.1rem;
+        line-height: 1.6;
+    }
+
+    .browse-card li:last-child {
+        margin-bottom: 0;
+    }
+
+    .browse-card li span {
+        position: absolute;
+        left: 0;
+        font-size: 1.5rem;
+    }
+
+    .browse-card li strong {
+        display: block;
+        margin-bottom: 0.3rem;
+        font-weight: 600;
+    }
+
+    .benefit-stat {
+        margin-bottom: 2rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .benefit-stat:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .benefit-stat .stat-number {
+        font-size: 3rem;
+        font-weight: 900;
+        margin-bottom: 0.5rem;
+    }
+
+    .benefit-stat p {
+        color: #e0e0e0;
+        font-size: 1.1rem;
+    }
+
+    .gradient-green {
+        background: linear-gradient(135deg, #4CAF50, #8BC34A);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .gradient-blue {
+        background: linear-gradient(135deg, #2196F3, #00BCD4);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .gradient-orange {
+        background: linear-gradient(135deg, #FF9800, #FF5722);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .gradient-purple {
+        background: linear-gradient(135deg, #9C27B0, #E91E63);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .browse-cta {
+        text-align: center;
+        margin-top: 4rem;
+        padding: 3rem;
+        background: rgba(255,255,255,0.1);
+        border-radius: 25px;
+        border: 2px solid rgba(255,255,255,0.2);
+        backdrop-filter: blur(20px);
+    }
+
+    .browse-cta h3 {
+        font-size: 2.2rem;
+        margin-bottom: 1rem;
+        font-weight: 700;
+        color: white;
+    }
+
+    .browse-cta p {
+        font-size: 1.3rem;
+        line-height: 1.6;
+        color: #f0f0f0;
+        margin-bottom: 2rem;
+    }
+
+    .browse-cta em {
+        font-style: italic;
+        font-weight: 600;
+    }
+
+    .browse-cta-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.8rem;
+        padding: 1.2rem 2.8rem;
+        background: white;
+        color: black;
+        text-decoration: none;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 1.05rem;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        margin-top: 1rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .browse-cta-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 35px rgba(255,255,255,0.3);
+    }
+
+    @media (max-width: 768px) {
+        .browse-grid {
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        .browse-section .section-title {
+            font-size: 2.5rem;
+        }
+
+        .browse-cta h3 {
+            font-size: 1.8rem;
+        }
+
+        .browse-cta p {
+            font-size: 1.1rem;
+        }
+    }
+        
         * {
             margin: 0;
             padding: 0;
