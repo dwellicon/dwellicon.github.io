@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Chat with Members & Admin Tools (Fixed Kicks)</title>
+  <title>Chat with Members & Admin Tools</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     :root{
@@ -35,7 +35,7 @@
     .btn.attach{background:#10b981;color:#fff}
     .members-column{width:300px;min-width:220px;max-width:360px;background:#fbfdff;border-left:1px solid #e6edf6;display:flex;flex-direction:column}
     .members-header{padding:14px 16px;border-bottom:1px solid #eef2f7;display:flex;align-items:center;justify-content:space-between}
-    .members-header h3{margin:0;font-size:14px}
+    .members-header h3{margin:0;font-size:14px;display:flex;gap:8px;align-items:center}
     .members-list{padding:12px;overflow:auto;flex:1}
     .member{display:flex;gap:10px;align-items:center;padding:8px;border-radius:8px;transition:background .12s;cursor:pointer}
     .member:hover{background:rgba(15,23,36,0.03)}
@@ -52,6 +52,8 @@
     .banner{position:fixed;left:16px;bottom:16px;background:#fff;padding:10px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.08);font-size:13px;display:none}
     .block-screen{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:1000;color:white;font-size:18px;display:none}
     .block-screen .card{background:rgba(255,255,255,0.06);padding:20px;border-radius:10px;text-align:center}
+    .icon-btn{background:transparent;border:0;padding:6px;border-radius:6px;cursor:pointer}
+    .icon-btn svg{width:18px;height:18px;display:block}
     @media (max-width:900px){.members-column{display:none}}
   </style>
 </head>
@@ -66,7 +68,14 @@
         </div>
         <div class="header-right">
           <input id="displayNameInput" class="name-input" type="text" placeholder="Your name">
-          <button id="banlandBtn" class="btn" title="Alt+X to open Banland" style="background:#f59e0b;color:#fff;display:none">Banland</button>
+          <button id="adminLoginBtn" class="icon-btn" title="Admin login (Kyson)">
+            <!-- simple key SVG -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10v6a2 2 0 0 1-2 2h-3v-3h-4v3H5a2 2 0 0 1-2-2V7a4 4 0 0 1 4-4h6"></path>
+              <circle cx="8.5" cy="11.5" r="1.5"></circle>
+            </svg>
+          </button>
+          <button id="adminLogoutBtn" class="btn" style="background:#ef4444;color:#fff;display:none">Logout</button>
         </div>
       </header>
 
@@ -90,6 +99,26 @@
     </aside>
   </div>
 
+  <!-- Admin login modal -->
+  <div id="adminModal" class="overlay">
+    <div class="modal" role="dialog" aria-modal="true">
+      <h3>Administrator Login</h3>
+      <div style="margin-top:8px" class="muted">Enter local admin credentials (stored only in this browser).</div>
+      <div style="margin-top:12px">
+        <input id="adminUser" type="text" placeholder="Username" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7">
+      </div>
+      <div style="margin-top:8px">
+        <input id="adminPass" type="password" placeholder="Password" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7">
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button id="adminSubmit" class="btn" style="background:#4f46e5;color:#fff">Login</button>
+        <button id="adminCancel" class="btn" style="background:#e5e7eb">Cancel</button>
+      </div>
+      <div id="adminError" class="muted" style="color:#b00020;margin-top:8px;display:none"></div>
+    </div>
+  </div>
+
+  <!-- Member modal -->
   <div id="memberModal" class="overlay">
     <div class="modal" role="dialog" aria-modal="true">
       <h3 id="modalName">Member</h3>
@@ -103,6 +132,7 @@
     </div>
   </div>
 
+  <!-- Banland modal -->
   <div id="banlandModal" class="overlay">
     <div class="modal" role="dialog" aria-modal="true">
       <h3>Banland (unban)</h3>
@@ -113,10 +143,11 @@
     </div>
   </div>
 
+  <!-- Kicked / Banned full-screen blocks -->
   <div id="kickedScreen" class="block-screen">
     <div class="card">
       <div style="font-size:20px;font-weight:700">You were kicked</div>
-      <div style="margin-top:8px">You cannot send messages in this session. Refresh to rejoin.</div>
+      <div style="margin-top:8px">You cannot send messages in this session. Wait until kick expires or an admin removes it.</div>
     </div>
   </div>
 
@@ -156,6 +187,15 @@
     const onlineCountEl = document.getElementById('onlineCount');
     const banner = document.getElementById('banner');
 
+    const adminLoginBtn = document.getElementById('adminLoginBtn');
+    const adminModal = document.getElementById('adminModal');
+    const adminUser = document.getElementById('adminUser');
+    const adminPass = document.getElementById('adminPass');
+    const adminSubmit = document.getElementById('adminSubmit');
+    const adminCancel = document.getElementById('adminCancel');
+    const adminError = document.getElementById('adminError');
+    const adminLogoutBtn = document.getElementById('adminLogoutBtn');
+
     const memberModal = document.getElementById('memberModal');
     const modalName = document.getElementById('modalName');
     const modalUid = document.getElementById('modalUid');
@@ -178,6 +218,10 @@
     const KICKS_ROOT = 'kicks';
     const BANS_ROOT = 'bans';
 
+    // Admin credentials (stored locally only)
+    const ADMIN_USERNAME = 'Kyson';
+    const ADMIN_PASSWORD = '12345678';
+
     // helpers
     function showBanner(text, ms = 2500) {
       banner.textContent = text;
@@ -192,36 +236,44 @@
       if (stored) return JSON.parse(stored);
       const guestName = 'Guest-' + Math.random().toString(36).slice(2,8);
       const uid = 'guest_' + Date.now().toString(36);
-      const user = { username: guestName, uid };
+      const user = { username: guestName, uid, isAdmin: false };
       localStorage.setItem('chat_user', JSON.stringify(user));
       return user;
     }
 
+    function saveUser(u) { localStorage.setItem('chat_user', JSON.stringify(u)); }
+
     function setUserName(name) {
       const u = currentUser();
       u.username = name;
-      localStorage.setItem('chat_user', JSON.stringify(u));
-      // update presence with isAdmin flag
-      db.ref(`${PRESENCE_ROOT}/${u.uid}`).update({ username: name, isAdmin: (name === 'Kyson') }).catch(()=>{});
+      // if name matches admin username and local admin flag exists, keep isAdmin true
+      if (u.username === ADMIN_USERNAME && localStorage.getItem('admin_logged_in') === '1') u.isAdmin = true;
+      else u.isAdmin = false;
+      saveUser(u);
+      db.ref(`${PRESENCE_ROOT}/${u.uid}`).update({ username: name, isAdmin: u.isAdmin }).catch(()=>{});
       updateAdminUI();
     }
 
     function isAdminLocal() {
       const u = currentUser();
-      return (u && u.username === 'Kyson');
+      return !!u.isAdmin;
     }
 
     function updateAdminUI() {
-      if (isAdminLocal()) banlandBtn.style.display = 'inline-block';
-      else banlandBtn.style.display = 'none';
+      if (isAdminLocal()) {
+        banlandBtn.style.display = 'inline-block';
+        adminLogoutBtn.style.display = 'inline-block';
+      } else {
+        banlandBtn.style.display = 'none';
+        adminLogoutBtn.style.display = 'none';
+      }
     }
 
     // presence
     let presenceRef = null;
     let heartbeatTimer = null;
-    function startPresence(uid, username) {
+    function startPresence(uid, username, isAdmin=false) {
       presenceRef = db.ref(`${PRESENCE_ROOT}/${uid}`);
-      const isAdmin = (username === 'Kyson');
       presenceRef.set({ username, online: true, lastSeen: now(), isAdmin }).catch(()=>{});
       presenceRef.onDisconnect().remove().catch(()=>{});
       if (heartbeatTimer) clearInterval(heartbeatTimer);
@@ -261,7 +313,7 @@
       meta.appendChild(nameSpan);
 
       // show admin badge if message flagged or name is Kyson
-      if (data.isAdmin || (data.name === 'Kyson')) {
+      if (data.isAdmin || (data.name === ADMIN_USERNAME)) {
         const badge = document.createElement('span');
         badge.className = 'admin-badge';
         badge.textContent = 'ADMIN';
@@ -293,7 +345,7 @@
       const text = raw.replace(/\r?\n|\r/g,' ').trim().slice(0,300);
       if (!text) return;
       const u = currentUser();
-      const isAdmin = (u.username === 'Kyson');
+      const isAdmin = !!u.isAdmin;
       db.ref(MESSAGES_REF).push({ name: u.username, text, ts: now(), uid: u.uid, isAdmin }).then(()=> {
         msgInput.value = '';
       }).catch(err => {
@@ -334,7 +386,7 @@
         name.className = 'name';
         name.textContent = info.username || uid;
         // show admin badge if presence says isAdmin or username is Kyson
-        if (info.isAdmin || (info.username === 'Kyson')) {
+        if (info.isAdmin || (info.username === ADMIN_USERNAME)) {
           const adminTag = document.createElement('span');
           adminTag.className = 'admin-badge';
           adminTag.textContent = 'ADMIN';
@@ -383,15 +435,15 @@
     }
     closeModal.addEventListener('click', ()=> memberModal.style.display = 'none');
 
-    // Kick: write to /kicks/{uid}
+    // Kick: write to /kicks/{uid} with TTL; ensure client-side expiry handling
     kickBtn.addEventListener('click', async () => {
       if (!modalTargetUid) return;
       const u = currentUser();
       if (!isAdminLocal()) { showBanner('Admin only'); return; }
       try {
-        // write kick entry; include a TTL field so clients can auto-remove if desired
-        await db.ref(`${KICKS_ROOT}/${modalTargetUid}`).set({ ts: now(), by: u.uid, byName: u.username, ttl: 30000 });
-        showBanner('Kick sent');
+        const ttl = 30_000; // 30 seconds
+        await db.ref(`${KICKS_ROOT}/${modalTargetUid}`).set({ ts: now(), by: u.uid, byName: u.username, ttl });
+        showBanner('Kick sent (30s)');
       } catch (err) {
         console.error('kick error', err);
         showBanner('Kick failed');
@@ -415,39 +467,33 @@
       memberModal.style.display = 'none';
     });
 
-    // Kick listener: handle child_added and child_removed to avoid persistent kicks
+    // Kick listener: handle child_added and child_removed; use TTL to auto-clear
     function startKickListener() {
       const ref = db.ref(KICKS_ROOT);
-      // when a kick is added
       ref.on('child_added', snap => {
         const targetUid = snap.key;
         const data = snap.val() || {};
         const me = currentUser();
         if (me && me.uid === targetUid) {
-          // set local kicked flag and show overlay
-          localStorage.setItem(`kicked_${me.uid}`, '1');
+          // set local kicked flag with expiry
+          const expiry = (data.ts || now()) + (data.ttl || 30000);
+          localStorage.setItem(`kicked_${me.uid}`, String(expiry));
           showKicked();
         }
-        // If the kick has a TTL, schedule removal by the client that created it (best-effort)
+        // schedule removal if TTL present (best-effort)
         if (data && data.ttl && data.ts) {
           const removeAt = data.ts + data.ttl;
           const delay = Math.max(0, removeAt - now());
-          setTimeout(()=> {
-            // remove the kick entry (only the client that created it will likely succeed)
-            db.ref(`${KICKS_ROOT}/${targetUid}`).remove().catch(()=>{});
-          }, delay + 500);
+          setTimeout(()=> db.ref(`${KICKS_ROOT}/${targetUid}`).remove().catch(()=>{}), delay + 500);
         }
       });
 
-      // when a kick is removed, clear local flag and hide overlay for that uid
       ref.on('child_removed', snap => {
         const targetUid = snap.key;
         const me = currentUser();
-        // clear local kicked flag for the removed uid
+        // clear local kicked flag for removed uid
         localStorage.removeItem(`kicked_${targetUid}`);
-        if (me && me.uid === targetUid) {
-          hideKicked();
-        }
+        if (me && me.uid === targetUid) hideKicked();
       });
     }
 
@@ -457,12 +503,9 @@
       ref.on('child_added', snap => {
         const targetUid = snap.key;
         const data = snap.val() || {};
-        // persist ban locally for that uid
         localStorage.setItem(`banned_${targetUid}`, JSON.stringify({ ts: data.ts || now(), by: data.by || null, byName: data.byName || null, username: data.username || null }));
         const me = currentUser();
-        if (me && me.uid === targetUid) {
-          showBanned();
-        }
+        if (me && me.uid === targetUid) showBanned();
         refreshBanland();
       });
       ref.on('child_removed', snap => {
@@ -477,7 +520,19 @@
     // Kicked UI
     function showKicked() { kickedScreen.style.display = 'flex'; }
     function hideKicked() { kickedScreen.style.display = 'none'; }
-    function isKickedThisSession() { return !!localStorage.getItem(`kicked_${currentUser().uid}`); }
+    function isKickedThisSession() {
+      const me = currentUser();
+      const val = localStorage.getItem(`kicked_${me.uid}`);
+      if (!val) return false;
+      const expiry = Number(val);
+      if (isNaN(expiry)) return true;
+      if (Date.now() > expiry) {
+        localStorage.removeItem(`kicked_${me.uid}`);
+        hideKicked();
+        return false;
+      }
+      return true;
+    }
 
     // Banned UI
     function showBanned() { bannedScreen.style.display = 'flex'; }
@@ -525,27 +580,82 @@
       });
     }
 
+    // Admin login flow (local-only)
+    adminLoginBtn.addEventListener('click', () => {
+      adminError.style.display = 'none';
+      adminUser.value = '';
+      adminPass.value = '';
+      adminModal.style.display = 'flex';
+      adminUser.focus();
+    });
+    adminCancel.addEventListener('click', () => adminModal.style.display = 'none');
+
+    adminSubmit.addEventListener('click', () => {
+      const u = (adminUser.value || '').trim();
+      const p = (adminPass.value || '').trim();
+      if (u === ADMIN_USERNAME && p === ADMIN_PASSWORD) {
+        // set local admin flag and set user identity to admin
+        const me = currentUser();
+        me.username = ADMIN_USERNAME;
+        me.isAdmin = true;
+        saveUser(me);
+        localStorage.setItem('admin_logged_in', '1'); // persistent local admin login
+        // update presence
+        db.ref(`${PRESENCE_ROOT}/${me.uid}`).update({ username: me.username, isAdmin: true }).catch(()=>{});
+        updateAdminUI();
+        adminModal.style.display = 'none';
+        showBanner('Logged in as admin');
+      } else {
+        adminError.textContent = 'Invalid credentials';
+        adminError.style.display = 'block';
+      }
+    });
+
+    // Admin logout: clear local admin flag but keep username as guest or current name
+    adminLogoutBtn.addEventListener('click', () => {
+      const me = currentUser();
+      me.isAdmin = false;
+      // if username was Kyson, keep the name but remove admin flag; optionally change name
+      saveUser(me);
+      localStorage.removeItem('admin_logged_in');
+      db.ref(`${PRESENCE_ROOT}/${me.uid}`).update({ isAdmin: false }).catch(()=>{});
+      updateAdminUI();
+      showBanner('Admin logged out');
+    });
+
     // init
     (function init() {
       const u = currentUser();
+      // if admin_logged_in persisted and username matches, set isAdmin
+      if (localStorage.getItem('admin_logged_in') === '1' && u.username === ADMIN_USERNAME) u.isAdmin = true;
+      saveUser(u);
       displayNameInput.value = u.username || '';
       updateAdminUI();
-      startPresence(u.uid, u.username);
+      startPresence(u.uid, u.username, !!u.isAdmin);
       startMessages();
       startMembersListener();
       startKickListener();
       startBanListener();
 
-      // Ensure local kicked flag matches DB state on load:
-      // If there's no kick entry for this uid, clear local kicked flag.
+      // ensure local kicked flag respects DB on load
       db.ref(`${KICKS_ROOT}/${u.uid}`).once('value').then(snap => {
-        if (!snap.exists()) {
+        const data = snap.val();
+        if (!data) {
           localStorage.removeItem(`kicked_${u.uid}`);
           hideKicked();
         } else {
-          // if kick exists, ensure overlay shows
-          localStorage.setItem(`kicked_${u.uid}`, '1');
-          showKicked();
+          const expiry = (data.ts || now()) + (data.ttl || 30000);
+          localStorage.setItem(`kicked_${u.uid}`, String(expiry));
+          if (Date.now() > expiry) {
+            // expired: remove DB entry and local flag
+            db.ref(`${KICKS_ROOT}/${u.uid}`).remove().catch(()=>{});
+            localStorage.removeItem(`kicked_${u.uid}`);
+            hideKicked();
+          } else {
+            showKicked();
+            // schedule removal
+            setTimeout(()=> db.ref(`${KICKS_ROOT}/${u.uid}`).remove().catch(()=>{}), expiry - Date.now() + 500);
+          }
         }
       }).catch(()=>{});
 
@@ -574,6 +684,7 @@
     });
 
     // close modals on outside click
+    adminModal.addEventListener('click', (ev) => { if (ev.target === adminModal) adminModal.style.display = 'none'; });
     memberModal.addEventListener('click', (ev) => { if (ev.target === memberModal) memberModal.style.display = 'none'; });
     banlandModal.addEventListener('click', (ev) => { if (ev.target === banlandModal) banlandModal.style.display = 'none'; });
 
@@ -581,18 +692,21 @@
     function setUserName(name) {
       const u = currentUser();
       u.username = name;
-      localStorage.setItem('chat_user', JSON.stringify(u));
-      db.ref(`${PRESENCE_ROOT}/${u.uid}`).update({ username: name, isAdmin: (name === 'Kyson') }).catch(()=>{});
+      // preserve admin_logged_in only if name matches admin username
+      if (localStorage.getItem('admin_logged_in') === '1' && name === ADMIN_USERNAME) u.isAdmin = true;
+      else u.isAdmin = false;
+      saveUser(u);
+      db.ref(`${PRESENCE_ROOT}/${u.uid}`).update({ username: name, isAdmin: u.isAdmin }).catch(()=>{});
       updateAdminUI();
     }
 
-    // helper: currentUser (duplicate safe)
+    // helper: currentUser
     function currentUser() {
       const stored = localStorage.getItem('chat_user');
       if (stored) return JSON.parse(stored);
       const guestName = 'Guest-' + Math.random().toString(36).slice(2,8);
       const uid = 'guest_' + Date.now().toString(36);
-      const user = { username: guestName, uid };
+      const user = { username: guestName, uid, isAdmin: false };
       localStorage.setItem('chat_user', JSON.stringify(user));
       return user;
     }
