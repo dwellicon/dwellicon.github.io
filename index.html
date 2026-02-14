@@ -2,175 +2,175 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Simple Firebase Chat</title>
+  <title>Live Chat</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
-    body { font-family: Arial, sans-serif; max-width:700px; margin:40px auto; }
-    #chat { border:1px solid #ddd; height:300px; overflow:auto; padding:10px; background:#fafafa; }
-    .msg { margin:6px 0; padding:6px 8px; border-radius:6px; background:#fff; box-shadow:0 1px 0 rgba(0,0,0,0.04); }
-    #controls { margin-top:10px; display:flex; gap:8px; }
-    input[type=text] { flex:1; padding:8px; }
-    #status { margin-top:8px; color:#666; font-size:13px; }
-    .error { color:#b00020; }
+    :root{
+      --bg:#f2f6fb;
+      --card:#ffffff;
+      --muted:#7b8794;
+      --accent:#4f46e5;
+      --you:#e9f0ff;
+      --other:#ffffff;
+      --shadow: 0 6px 20px rgba(20,30,60,0.08);
+      --radius:12px;
+      --max-width:760px;
+    }
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#eef6ff 0%,var(--bg) 100%);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;color:#0f1724}
+    .wrap{max-width:var(--max-width);margin:28px auto;padding:18px;box-sizing:border-box}
+    .card{background:var(--card);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;height:78vh;min-height:520px}
+    header{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid #eef2f7}
+    .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#06b6d4);display:flex;align-items:center;justify-content:center;color:white;font-weight:700}
+    header h1{font-size:16px;margin:0}
+    header p{margin:0;color:var(--muted);font-size:13px}
+    #chat{flex:1;padding:18px;overflow:auto;display:flex;flex-direction:column;gap:10px;background:linear-gradient(180deg,rgba(79,70,229,0.02),transparent)}
+    .msg-row{display:flex;gap:10px;align-items:flex-end;max-width:85%}
+    .msg-row.you{margin-left:auto;flex-direction:row-reverse}
+    .avatar{width:36px;height:36px;border-radius:10px;background:#c7d2fe;color:#1e293b;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0}
+    .bubble{padding:10px 12px;border-radius:12px;background:var(--other);box-shadow:0 1px 0 rgba(15,23,36,0.03);position:relative}
+    .msg-row.you .bubble{background:var(--you)}
+    .meta{display:flex;gap:8px;align-items:center;margin-top:6px;font-size:12px;color:var(--muted)}
+    .time{font-size:11px;color:var(--muted)}
+    .input-bar{display:flex;gap:10px;padding:12px;border-top:1px solid #eef2f7;background:linear-gradient(180deg,transparent,rgba(255,255,255,0.6));align-items:center}
+    .input{flex:1;display:flex;gap:8px;align-items:center;background:#f8fafc;padding:8px;border-radius:10px;border:1px solid #eef2f7}
+    .input input{flex:1;border:0;background:transparent;padding:8px;font-size:14px;outline:none}
+    .send{background:var(--accent);color:white;border:0;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600;box-shadow:0 6px 18px rgba(79,70,229,0.12)}
+    .send:active{transform:translateY(1px)}
+    .name{width:120px;padding:8px;border-radius:8px;border:1px solid #eef2f7;background:white}
+    .muted-note{font-size:12px;color:var(--muted);padding:8px 18px}
+    @media (max-width:640px){
+      .name{display:none}
+      .card{height:86vh}
+      .logo{width:36px;height:36px}
+    }
   </style>
 </head>
 <body>
+  <div class="wrap">
+    <div class="card" role="application" aria-label="Chat">
+      <header>
+        <div class="logo">C</div>
+        <div>
+          <h1>Live Chat</h1>
+          <p>Real-time messages powered by Firebase</p>
+        </div>
+      </header>
 
-<h2>Live Chat</h2>
-<div id="chat" aria-live="polite"></div>
+      <div id="chat" aria-live="polite"></div>
 
-<div id="controls">
-  <input id="name" type="text" placeholder="Your name" value="Guest" aria-label="Your name">
-  <input id="msg" type="text" placeholder="Type a message" aria-label="Message">
-  <button id="send">Send</button>
-</div>
+      <div class="muted-note">Tip: press Enter to send. Your name is saved locally.</div>
 
-<div id="status">Status: <span id="statustxt">initializing…</span></div>
+      <div class="input-bar">
+        <input id="name" class="name" type="text" placeholder="Your name" value="Guest" aria-label="Your name">
+        <div class="input" role="group" aria-label="Message input">
+          <input id="msg" type="text" placeholder="Write a message…" aria-label="Message">
+        </div>
+        <button id="send" class="send" aria-label="Send message">Send</button>
+      </div>
+    </div>
+  </div>
 
-<!-- Firebase compat SDKs -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <!-- Firebase compat SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-<script>
-/* ====== CONFIG: paste the exact Web app config from Firebase Console here ====== */
-const firebaseConfig = {
-  apiKey: "AIzaSyAulcwmA2r2Z0Wv5mxyuWwQvPv05E8HvMU",
-  authDomain: "dwellicon-42e72.firebaseapp.com",
-  databaseURL: "https://dwellicon-42e72-default-rtdb.firebaseio.com",
-  projectId: "dwellicon-42e72",
-  storageBucket: "dwellicon-42e72.appspot.com",
-  messagingSenderId: "634657717896",
-  appId: "1:634657717896:web:27f246614fdb2c2398a93d",
-  measurementId: "G-GP1YBL86RB"
-};
-/* =========================================================================== */
-
-const statusEl = document.getElementById('statustxt');
-console.log('firebaseConfig', firebaseConfig);
-
-// Basic validation
-if (!firebaseConfig || !firebaseConfig.projectId) {
-  console.error('Missing firebaseConfig or projectId. Copy the Web app config from Firebase Console.');
-  statusEl.textContent = 'config missing projectId';
-  statusEl.classList.add('error');
-} else if (!firebaseConfig.databaseURL) {
-  console.error('Missing databaseURL in firebaseConfig. Add the Realtime Database URL from Firebase Console.');
-  statusEl.textContent = 'missing databaseURL';
-  statusEl.classList.add('error');
-} else {
-  try {
+  <script>
+    /* ====== CONFIG: paste your firebaseConfig here ====== */
+    const firebaseConfig = {
+      apiKey: "AIzaSyAulcwmA2r2Z0Wv5mxyuWwQvPv05E8HvMU",
+      authDomain: "dwellicon-42e72.firebaseapp.com",
+      databaseURL: "https://dwellicon-42e72-default-rtdb.firebaseio.com",
+      projectId: "dwellicon-42e72",
+      storageBucket: "dwellicon-42e72.appspot.com",
+      messagingSenderId: "634657717896",
+      appId: "1:634657717896:web:27f246614fdb2c2398a93d",
+      measurementId: "G-GP1YBL86RB"
+    };
     firebase.initializeApp(firebaseConfig);
-    statusEl.textContent = 'initialized';
-  } catch (err) {
-    console.error('firebase.initializeApp error', err);
-    statusEl.textContent = 'init error';
-    statusEl.classList.add('error');
-  }
-}
+    const db = firebase.database().ref('messages');
 
-let dbRef = null;
-try {
-  if (firebase && firebase.database) {
-    dbRef = firebase.database().ref('messages');
-    console.log('dbRef created', dbRef.toString());
-  } else {
-    console.error('firebase.database is not available. Check SDK scripts.');
-    statusEl.textContent = 'database SDK missing';
-    statusEl.classList.add('error');
-  }
-} catch (err) {
-  console.error('Error getting database reference', err);
-  statusEl.textContent = 'db ref error';
-  statusEl.classList.add('error');
-}
+    // Elements
+    const chat = document.getElementById('chat');
+    const nameInput = document.getElementById('name');
+    const msgInput = document.getElementById('msg');
+    const sendBtn = document.getElementById('send');
 
-const chat = document.getElementById('chat');
-const nameInput = document.getElementById('name');
-const msgInput = document.getElementById('msg');
-const sendBtn = document.getElementById('send');
+    // Persist name
+    const savedName = localStorage.getItem('chat_name');
+    if (savedName) nameInput.value = savedName;
+    nameInput.addEventListener('change', () => localStorage.setItem('chat_name', nameInput.value.trim()));
 
-// Small sanitizer: trim, limit length, remove newlines
-function sanitize(text) {
-  return text.replace(/\r?\n|\r/g, ' ').trim().slice(0, 300);
-}
-
-// Debug: read once to confirm reads work
-if (dbRef) {
-  dbRef.limitToLast(10).once('value')
-    .then(snap => {
-      console.log('once value snapshot', snap.val());
-    })
-    .catch(err => {
-      console.error('once value error', err);
-      statusEl.textContent = 'read error';
-      statusEl.classList.add('error');
-    });
-}
-
-// Listen for new messages with error callback
-if (dbRef) {
-  dbRef.limitToLast(100).on('child_added', snap => {
-    const data = snap.val() || {};
-    const name = data.name || 'Guest';
-    const text = data.text || '';
-    const el = document.createElement('div');
-    el.className = 'msg';
-    // escape text for safety
-    el.textContent = `${name}: ${text}`;
-    chat.appendChild(el);
-    chat.scrollTop = chat.scrollHeight;
-  }, err => {
-    console.error('Realtime DB listen error', err);
-    statusEl.textContent = 'listen error';
-    statusEl.classList.add('error');
-  });
-  statusEl.textContent = 'connected';
-}
-
-// Send message with promise handling
-sendBtn.onclick = () => {
-  const raw = msgInput.value;
-  const text = sanitize(raw);
-  const name = sanitize(nameInput.value) || 'Guest';
-  if (!text) return;
-  if (!dbRef) {
-    console.error('No database reference. Message not sent.');
-    statusEl.textContent = 'not connected';
-    statusEl.classList.add('error');
-    return;
-  }
-
-  dbRef.push({ name, text, ts: Date.now() })
-    .then(() => {
-      msgInput.value = '';
-      statusEl.textContent = 'message sent';
-      setTimeout(() => { if (statusEl.textContent === 'message sent') statusEl.textContent = 'connected'; }, 1200);
-    })
-    .catch(err => {
-      console.error('Push error', err);
-      statusEl.textContent = 'send error';
-      statusEl.classList.add('error');
-    });
-};
-
-// Send on Enter
-msgInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendBtn.click(); });
-
-/* Optional: show connection state changes (helps debug network/auth issues) */
-if (firebase && firebase.database) {
-  const connectedRef = firebase.database().ref('.info/connected');
-  connectedRef.on('value', snap => {
-    const val = snap.val();
-    console.log('.info/connected', val);
-    if (val === true) {
-      if (!statusEl.classList.contains('error')) statusEl.textContent = 'connected';
-    } else {
-      statusEl.textContent = 'disconnected';
-      statusEl.classList.add('error');
+    // Helpers
+    function initials(name){
+      return (name || 'G').split(' ').map(s=>s[0]).slice(0,2).join('').toUpperCase();
     }
-  });
-}
-</script>
+    function timeFmt(ts){
+      const d = new Date(ts);
+      return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    }
 
+    // Auto-scroll only if user is near bottom
+    function isAtBottom(el, threshold = 80){
+      return (el.scrollHeight - el.scrollTop - el.clientHeight) < threshold;
+    }
+
+    // Render message
+    function renderMessage(data, key){
+      const me = (data.name || 'Guest') === (nameInput.value || 'Guest');
+      const row = document.createElement('div');
+      row.className = 'msg-row' + (me ? ' you' : '');
+      const avatar = document.createElement('div');
+      avatar.className = 'avatar';
+      avatar.textContent = initials(data.name);
+      const bubbleWrap = document.createElement('div');
+      bubbleWrap.style.display = 'flex';
+      bubbleWrap.style.flexDirection = 'column';
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.textContent = data.text;
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      const nameEl = document.createElement('div');
+      nameEl.style.fontSize='12px';
+      nameEl.style.color='var(--muted)';
+      nameEl.textContent = data.name || 'Guest';
+      const timeEl = document.createElement('div');
+      timeEl.className = 'time';
+      timeEl.textContent = timeFmt(data.ts || Date.now());
+      meta.appendChild(nameEl);
+      meta.appendChild(timeEl);
+      bubbleWrap.appendChild(bubble);
+      bubbleWrap.appendChild(meta);
+      row.appendChild(avatar);
+      row.appendChild(bubbleWrap);
+
+      const atBottom = isAtBottom(chat);
+      chat.appendChild(row);
+      if (atBottom) chat.scrollTop = chat.scrollHeight;
+    }
+
+    // Listen for messages
+    db.limitToLast(200).on('child_added', snap => {
+      const data = snap.val();
+      renderMessage(data, snap.key);
+    });
+
+    // Send
+    function send(){
+      const raw = msgInput.value || '';
+      const text = raw.replace(/\r?\n|\r/g,' ').trim().slice(0,300);
+      const name = (nameInput.value || 'Guest').trim().slice(0,50) || 'Guest';
+      if (!text) return;
+      db.push({ name, text, ts: Date.now() })
+        .then(()=> msgInput.value = '')
+        .catch(e => console.error('send error', e));
+    }
+
+    sendBtn.addEventListener('click', send);
+    msgInput.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+
+    // Small UX: focus message input on load
+    window.addEventListener('load', () => msgInput.focus());
+  </script>
 </body>
 </html>
