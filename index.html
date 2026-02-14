@@ -69,7 +69,6 @@
     .member .avatar{width:40px;height:40px;border-radius:8px;background:#c7d2fe;color:#0f1724;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
     .member .info{display:flex;flex-direction:column}
     .member .name{font-weight:700;font-size:14px;display:flex;gap:8px;align-items:center}
-    .member .bio{font-size:12px;color:var(--muted);margin-top:4px;max-width:180px;word-break:break-word}
     .member .status{font-size:12px;color:var(--muted);margin-top:4px}
 
     /* bottom user panel */
@@ -264,7 +263,7 @@
   <div id="bioModal" class="overlay" role="dialog" aria-modal="true">
     <div class="modal" role="document">
       <h3>Edit Profile</h3>
-      <div style="margin-top:8px" class="muted">Your bio is public and visible to everyone in the members list.</div>
+      <div style="margin-top:8px" class="muted">Your bio is public and visible to everyone in the members profile view.</div>
       <div style="margin-top:12px">
         <textarea id="bioInput" rows="4" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7"></textarea>
       </div>
@@ -276,11 +275,12 @@
     </div>
   </div>
 
-  <!-- Member modal -->
+  <!-- Member modal (profile + admin actions) -->
   <div id="memberModal" class="overlay">
     <div class="modal" role="dialog" aria-modal="true">
       <h3 id="modalName">Member</h3>
       <div id="modalUid" class="muted" style="font-size:12px"></div>
+      <div style="margin-top:8px" id="modalBio" class="muted" style="font-size:13px">No bio</div>
       <div style="margin-top:10px" id="modalStatus" class="muted"></div>
       <div class="row" style="margin-top:12px">
         <button id="kickBtn" class="btn danger">Kick</button>
@@ -402,6 +402,7 @@
     const modalName = document.getElementById('modalName');
     const modalUid = document.getElementById('modalUid');
     const modalStatus = document.getElementById('modalStatus');
+    const modalBio = document.getElementById('modalBio');
     const kickBtn = document.getElementById('kickBtn');
     const banBtn = document.getElementById('banBtn');
     const closeModal = document.getElementById('closeModal');
@@ -523,8 +524,10 @@
     function startPresence(uid, username, isAdmin=false) {
       presenceRef = db.ref(`${PRESENCE_ROOT}/${uid}`);
       const bio = localStorage.getItem('bio_' + uid) || '';
+      // set presence node (do not remove on disconnect; mark offline instead)
       presenceRef.set({ username, online: true, lastSeen: now(), isAdmin, bio }).catch(()=>{});
-      presenceRef.onDisconnect().remove().catch(()=>{});
+      // onDisconnect: mark offline and set lastSeen
+      presenceRef.onDisconnect().update({ online: false, lastSeen: now() }).catch(()=>{});
       if (heartbeatTimer) clearInterval(heartbeatTimer);
       heartbeatTimer = setInterval(()=> {
         db.ref(`${PRESENCE_ROOT}/${uid}`).update({ lastSeen: now(), online: true, username, isAdmin, bio: localStorage.getItem('bio_' + uid) || '' }).catch(()=>{});
@@ -1071,16 +1074,11 @@
           name.appendChild(adminTag);
         }
 
-        const bio = document.createElement('div');
-        bio.className = 'bio';
-        bio.textContent = info.bio || '';
-
         const status = document.createElement('div');
         status.className = 'status';
         status.textContent = info.online ? 'online' : 'last seen ' + timeAgo(info.lastSeen || Date.now());
 
         infoWrap.appendChild(name);
-        if (bio.textContent) infoWrap.appendChild(bio);
         infoWrap.appendChild(status);
 
         member.appendChild(avatar);
@@ -1117,6 +1115,7 @@
       modalName.textContent = info.username || uid;
       modalUid.textContent = uid;
       modalStatus.textContent = info.online ? 'online' : 'offline';
+      modalBio.textContent = info.bio || 'No bio';
       if (isAdminLocal()) {
         kickBtn.style.display = 'inline-block';
         banBtn.style.display = 'inline-block';
@@ -1339,7 +1338,7 @@
       const u = currentUser();
       const text = (bioInput.value || '').trim().slice(0,300);
       localStorage.setItem('bio_' + u.uid, text);
-      // update presence record so others see it
+      // update presence record so others see it in profile view
       try {
         await db.ref(`${PRESENCE_ROOT}/${u.uid}`).update({ bio: text, username: u.username || '', isAdmin: !!u.isAdmin, lastSeen: now(), online: true });
         bioMsg.textContent = 'Saved';
@@ -1397,10 +1396,12 @@
       setUserName(name);
     });
 
-    // remove presence on unload
+    // remove presence on unload: mark offline instead of removing node
     window.addEventListener('beforeunload', () => {
       const u = currentUser();
-      if (u && u.uid) db.ref(`${PRESENCE_ROOT}/${u.uid}`).remove().catch(()=>{});
+      if (u && u.uid) {
+        db.ref(`${PRESENCE_ROOT}/${u.uid}`).update({ online: false, lastSeen: now() }).catch(()=>{});
+      }
     });
 
     // Alt+X opens Banland
