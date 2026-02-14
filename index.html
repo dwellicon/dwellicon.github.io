@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>hi ali</title>
+  <title>Chat with Servers, Members & Admin Tools</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     :root{
@@ -15,7 +15,61 @@
       --shadow: 0 8px 30px rgba(20,30,60,0.06);
     }
     html,body{height:100%;margin:0;background:linear-gradient(180deg,#eef6ff 0%,var(--bg) 100%);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;color:#0f1724}
-    .layout{display:flex;height:100vh;align-items:stretch}
+    .app {
+      display:flex;
+      height:100vh;
+      overflow:hidden;
+    }
+
+    /* Servers column (left) - Discord style vertical circles */
+    .servers-column {
+      width:72px;
+      min-width:72px;
+      background:#0f1724;
+      color:white;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      padding:10px 8px;
+      gap:8px;
+      box-shadow: 4px 0 18px rgba(2,6,23,0.12);
+    }
+    .server-list {
+      flex:1;
+      width:100%;
+      overflow:auto;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      align-items:center;
+      padding:6px 0;
+    }
+    .server {
+      width:48px;
+      height:48px;
+      border-radius:50%;
+      background:#111827;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#fff;
+      font-weight:700;
+      cursor:pointer;
+      border:2px solid transparent;
+      transition:all .12s;
+      user-select:none;
+    }
+    .server:hover { transform:scale(1.04); }
+    .server.active { border-color:var(--accent); box-shadow:0 6px 18px rgba(79,70,229,0.12); }
+    .server .label { font-size:12px; pointer-events:none; }
+
+    .create-server-btn {
+      width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#06b6d4,#4f46e5);display:flex;align-items:center;justify-content:center;cursor:pointer;border:0;
+    }
+    .create-server-btn svg{width:20px;height:20px;color:white}
+
+    /* Main area */
+    .main-column { flex:1; display:flex; min-width:0; }
     .chat-column{flex:1;display:flex;flex-direction:column;background:var(--card);border-right:1px solid #e6edf6;box-shadow:var(--shadow);min-width:0}
     header{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid #eef2f7;background:linear-gradient(90deg, rgba(79,70,229,0.02), transparent)}
     .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#06b6d4);display:flex;align-items:center;justify-content:center;color:white;font-weight:700}
@@ -33,6 +87,8 @@
     .btn{padding:10px 14px;border-radius:10px;border:0;cursor:pointer;font-weight:600}
     .btn.send{background:var(--accent);color:#fff}
     .btn.attach{background:#10b981;color:#fff}
+
+    /* Members column (right) */
     .members-column{width:300px;min-width:220px;max-width:360px;background:#fbfdff;border-left:1px solid #e6edf6;display:flex;flex-direction:column}
     .members-header{padding:14px 16px;border-bottom:1px solid #eef2f7;display:flex;align-items:center;justify-content:space-between}
     .members-header h3{margin:0;font-size:14px;display:flex;gap:8px;align-items:center}
@@ -43,6 +99,8 @@
     .member .info{display:flex;flex-direction:column}
     .member .name{font-weight:600;font-size:14px;display:flex;gap:8px;align-items:center}
     .member .status{font-size:12px;color:var(--muted)}
+
+    /* Modals & overlays */
     .overlay{position:fixed;inset:0;background:rgba(10,12,20,0.45);display:flex;align-items:center;justify-content:center;z-index:999;display:none}
     .modal{background:white;padding:16px;border-radius:10px;min-width:320px;box-shadow:0 12px 40px rgba(10,20,40,0.3)}
     .modal h3{margin:0 0 8px 0}
@@ -52,69 +110,80 @@
     .banner{position:fixed;left:16px;bottom:16px;background:#fff;padding:10px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.08);font-size:13px;display:none}
     .block-screen{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:1000;color:white;font-size:18px;display:none}
     .block-screen .card{background:rgba(255,255,255,0.06);padding:20px;border-radius:10px;text-align:center}
-    .icon-btn{background:transparent;border:0;padding:6px;border-radius:6px;cursor:pointer}
-    .icon-btn svg{width:18px;height:18px;display:block}
-    .small-muted{font-size:12px;color:var(--muted)}
-    @media (max-width:900px){.members-column{display:none}}
+    .server-name { font-size:11px; color:#cbd5e1; margin-top:4px; text-align:center; width:64px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    @media (max-width:900px){ .members-column{display:none} .servers-column{display:none} }
   </style>
 </head>
 <body>
-  <div class="layout">
-    <div class="chat-column">
-      <header>
-        <div class="logo">C</div>
-        <div>
-          <h1>Private Chat</h1>
-          <p class="muted">Chat</p>
-        </div>
-        <div class="header-right">
-          <input id="displayNameInput" class="name-input" type="text" placeholder="Your name">
-          <button id="adminLoginBtn" class="icon-btn" title="Admin login (Kyson)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 10v6a2 2 0 0 1-2 2h-3v-3h-4v3H5a2 2 0 0 1-2-2V7a4 4 0 0 1 4-4h6"></path>
-              <circle cx="8.5" cy="11.5" r="1.5"></circle>
-            </svg>
-          </button>
-          <button id="adminLogoutBtn" class="btn" style="background:#ef4444;color:#fff;display:none">Logout</button>
-        </div>
-      </header>
+  <div class="app">
+    <!-- Servers column -->
+    <div class="servers-column" aria-label="Servers">
+      <button id="createServerBtn" class="create-server-btn" title="Create server" aria-label="Create server">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 5v14M5 12h14"></path>
+        </svg>
+      </button>
 
-      <div id="chat" aria-live="polite"></div>
+      <div class="server-list" id="serverList" role="list"></div>
 
-      <div class="input-bar">
-        <div class="input" role="group" aria-label="Message input">
-          <input id="msg" type="text" placeholder="Write a message…" aria-label="Message">
-        </div>
-        <button id="attach" class="btn attach" aria-label="Attach file">Attach</button>
-        <button id="send" class="btn send" aria-label="Send message">Send</button>
-      </div>
+      <div style="height:8px"></div>
     </div>
 
-    <aside class="members-column" aria-label="Members">
-      <div class="members-header">
-        <h3>Members <span id="adminHint" class="small-muted" style="font-weight:600;margin-left:6px"></span></h3>
-        <div id="onlineCount" class="small-muted">0 online</div>
+    <!-- Main chat + members -->
+    <div class="main-column">
+      <div class="chat-column">
+        <header>
+          <div class="logo">C</div>
+          <div>
+            <h1 id="currentServerTitle">Private Chat</h1>
+            <p class="muted" id="currentServerSubtitle">Real-time messages — select a server</p>
+          </div>
+          <div class="header-right">
+            <input id="displayNameInput" class="name-input" type="text" placeholder="Your name">
+            <button id="adminLoginBtn" class="icon-btn" title="Admin login (Kyson)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10v6a2 2 0 0 1-2 2h-3v-3h-4v3H5a2 2 0 0 1-2-2V7a4 4 0 0 1 4-4h6"></path>
+                <circle cx="8.5" cy="11.5" r="1.5"></circle>
+              </svg>
+            </button>
+            <button id="adminLogoutBtn" class="btn" style="background:#ef4444;color:#fff;display:none">Logout</button>
+          </div>
+        </header>
+
+        <div id="chat" aria-live="polite"></div>
+
+        <div class="input-bar">
+          <div class="input" role="group" aria-label="Message input">
+            <input id="msg" type="text" placeholder="Write a message…" aria-label="Message">
+          </div>
+          <button id="attach" class="btn attach" aria-label="Attach file">Attach</button>
+          <button id="send" class="btn send" aria-label="Send message">Send</button>
+        </div>
       </div>
-      <div class="members-list" id="membersList"></div>
-    </aside>
+
+      <aside class="members-column" aria-label="Members">
+        <div class="members-header">
+          <h3>Members</h3>
+          <div id="onlineCount" class="muted">0 online</div>
+        </div>
+        <div class="members-list" id="membersList"></div>
+      </aside>
+    </div>
   </div>
 
-  <!-- Admin login modal -->
-  <div id="adminModal" class="overlay">
+  <!-- Create server modal -->
+  <div id="createServerModal" class="overlay">
     <div class="modal" role="dialog" aria-modal="true">
-      <h3>Administrator Login</h3>
-      <div style="margin-top:8px" class="muted">Enter admin credentials</div>
+      <h3>Create Server</h3>
+      <div style="margin-top:8px" class="muted">Admins can create persistent servers (channels).</div>
       <div style="margin-top:12px">
-        <input id="adminUser" type="text" placeholder="Username" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7">
-      </div>
-      <div style="margin-top:8px">
-        <input id="adminPass" type="password" placeholder="Password" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7">
+        <input id="newServerName" type="text" placeholder="Server name" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7">
       </div>
       <div class="row" style="margin-top:12px">
-        <button id="adminSubmit" class="btn" style="background:#4f46e5;color:#fff">Login</button>
-        <button id="adminCancel" class="btn" style="background:#e5e7eb">Cancel</button>
+        <button id="createServerSubmit" class="btn" style="background:#4f46e5;color:#fff">Create</button>
+        <button id="createServerCancel" class="btn" style="background:#e5e7eb">Cancel</button>
       </div>
-      <div id="adminError" class="muted" style="color:#b00020;margin-top:8px;display:none"></div>
+      <div id="createServerError" class="muted" style="color:#b00020;margin-top:8px;display:none"></div>
     </div>
   </div>
 
@@ -129,6 +198,25 @@
         <button id="banBtn" class="btn" style="background:#6b7280;color:#fff">Ban</button>
         <button id="closeModal" class="btn" style="background:#e5e7eb">Close</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Admin login modal -->
+  <div id="adminModal" class="overlay">
+    <div class="modal" role="dialog" aria-modal="true">
+      <h3>Administrator Login</h3>
+      <div style="margin-top:8px" class="muted">Enter local admin credentials (stored only in this browser).</div>
+      <div style="margin-top:12px">
+        <input id="adminUser" type="text" placeholder="Username" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7">
+      </div>
+      <div style="margin-top:8px">
+        <input id="adminPass" type="password" placeholder="Password" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7">
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button id="adminSubmit" class="btn" style="background:#4f46e5;color:#fff">Login</button>
+        <button id="adminCancel" class="btn" style="background:#e5e7eb">Cancel</button>
+      </div>
+      <div id="adminError" class="muted" style="color:#b00020;margin-top:8px;display:none"></div>
     </div>
   </div>
 
@@ -178,7 +266,15 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // DOM
+    // DOM refs
+    const serverListEl = document.getElementById('serverList');
+    const createServerBtn = document.getElementById('createServerBtn');
+    const createServerModal = document.getElementById('createServerModal');
+    const createServerSubmit = document.getElementById('createServerSubmit');
+    const createServerCancel = document.getElementById('createServerCancel');
+    const newServerName = document.getElementById('newServerName');
+    const createServerError = document.getElementById('createServerError');
+
     const chatEl = document.getElementById('chat');
     const msgInput = document.getElementById('msg');
     const sendBtn = document.getElementById('send');
@@ -214,13 +310,19 @@
 
     // DB paths
     const PRESENCE_ROOT = 'presence';
-    const MESSAGES_REF = 'messages';
+    const SERVERS_ROOT = 'servers';
+    const MESSAGES_ROOT = 'messages'; // messages/{serverId}/{messageId}
     const KICKS_ROOT = 'kicks';
     const BANS_ROOT = 'bans';
 
     // Admin credentials (stored locally only)
     const ADMIN_USERNAME = 'Kyson';
     const ADMIN_PASSWORD = '12345678';
+
+    // state
+    let currentServerId = null;
+    let serversRef = null;
+    let messagesRef = null;
 
     // helpers
     function showBanner(text, ms = 2500) {
@@ -230,7 +332,7 @@
     }
     function now() { return Date.now(); }
 
-    // local user helpers
+    // user helpers
     function currentUser() {
       const stored = localStorage.getItem('chat_user');
       if (stored) return JSON.parse(stored);
@@ -242,29 +344,27 @@
     }
     function saveUser(u) { localStorage.setItem('chat_user', JSON.stringify(u)); }
 
-    function setUserName(name) {
-      const u = currentUser();
-      u.username = name;
-      // preserve admin_logged_in only if it exists and name matches admin username
-      if (localStorage.getItem('admin_logged_in') === '1' && name === ADMIN_USERNAME) u.isAdmin = true;
-      else u.isAdmin = false;
-      saveUser(u);
-      db.ref(`${PRESENCE_ROOT}/${u.uid}`).update({ username: name, isAdmin: u.isAdmin }).catch(()=>{});
-      updateAdminUI();
-    }
-
     function isAdminLocal() {
       const u = currentUser();
       return !!u.isAdmin;
     }
 
+    function setUserName(name) {
+      const u = currentUser();
+      u.username = name;
+      // preserve admin_logged_in only if it exists and name matches admin username
+      if (localStorage.getItem('admin_logged_in') === '1' && name === ADMIN_USERNAME) u.isAdmin = true;
+      else u.isAdmin = !!u.isAdmin; // keep existing admin flag if present
+      saveUser(u);
+      db.ref(`${PRESENCE_ROOT}/${u.uid}`).update({ username: name, isAdmin: u.isAdmin }).catch(()=>{});
+      updateAdminUI();
+    }
+
     function updateAdminUI() {
       if (isAdminLocal()) {
         adminLogoutBtn.style.display = 'inline-block';
-        document.getElementById('adminHint').textContent = 'admin view';
       } else {
         adminLogoutBtn.style.display = 'none';
-        document.getElementById('adminHint').textContent = '';
       }
     }
 
@@ -280,20 +380,126 @@
         db.ref(`${PRESENCE_ROOT}/${uid}`).update({ lastSeen: now(), online: true, username, isAdmin }).catch(()=>{});
       }, 25000);
     }
-    function stopPresence(uid) {
-      if (heartbeatTimer) clearInterval(heartbeatTimer);
-      if (presenceRef) { presenceRef.remove().catch(()=>{}); presenceRef = null; }
+
+    // servers
+    function startServersListener() {
+      serversRef = db.ref(SERVERS_ROOT);
+      serversRef.on('value', snap => {
+        const val = snap.val() || {};
+        renderServers(val);
+        // if currentServerId is null, pick default
+        if (!currentServerId) {
+          const keys = Object.keys(val);
+          if (keys.length) selectServer(keys[0]);
+          else createDefaultServerIfMissing();
+        }
+      }, err => console.error('servers listen error', err));
     }
 
-    // messages
-    let messagesRef = null;
-    function startMessages() {
-      if (messagesRef) return;
-      messagesRef = db.ref(MESSAGES_REF);
+    async function createDefaultServerIfMissing() {
+      // create a default 'global' server if none exist
+      const snap = await db.ref(SERVERS_ROOT).once('value');
+      if (!snap.exists()) {
+        const id = db.ref(SERVERS_ROOT).push().key;
+        await db.ref(`${SERVERS_ROOT}/${id}`).set({ name: 'Global', createdBy: 'system', createdAt: now() });
+      }
+    }
+
+    function renderServers(obj) {
+      serverListEl.innerHTML = '';
+      const entries = Object.entries(obj || {});
+      // sort by createdAt ascending
+      entries.sort((a,b) => (a[1].createdAt || 0) - (b[1].createdAt || 0));
+      entries.forEach(([id, info]) => {
+        const wrap = document.createElement('div');
+        wrap.style.display = 'flex';
+        wrap.style.flexDirection = 'column';
+        wrap.style.alignItems = 'center';
+        wrap.style.width = '100%';
+
+        const el = document.createElement('div');
+        el.className = 'server';
+        el.dataset.serverId = id;
+        el.title = info.name || id;
+        el.innerHTML = `<div class="label">${(info.name||'S').slice(0,2).toUpperCase()}</div>`;
+        if (id === currentServerId) el.classList.add('active');
+
+        // left-click selects server
+        el.addEventListener('click', () => selectServer(id));
+
+        // right-click (contextmenu) for delete (admin only)
+        el.addEventListener('contextmenu', (ev) => {
+          ev.preventDefault();
+          if (!isAdminLocal()) { showBanner('Admin only'); return; }
+          const confirmDelete = confirm(`Delete server "${info.name}"? This removes its messages and cannot be undone.`);
+          if (!confirmDelete) return;
+          // remove server and its messages
+          db.ref(`${SERVERS_ROOT}/${id}`).remove().catch(()=>{});
+          db.ref(`${MESSAGES_ROOT}/${id}`).remove().catch(()=>{});
+          showBanner('Server deleted');
+        });
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'server-name';
+        nameEl.textContent = info.name || 'Server';
+
+        wrap.appendChild(el);
+        wrap.appendChild(nameEl);
+        serverListEl.appendChild(wrap);
+      });
+    }
+
+    // server selection
+    function selectServer(id) {
+      if (!id) return;
+      if (currentServerId === id) return;
+      // detach previous messages listener
+      if (messagesRef) messagesRef.off();
+      currentServerId = id;
+      document.getElementById('currentServerTitle').textContent = 'Server: ' + (document.querySelector(`.server[data-server-id="${id}"]`)?.title || id);
+      document.getElementById('currentServerSubtitle').textContent = 'Chatting in server';
+      // update active class
+      document.querySelectorAll('.server').forEach(s => s.classList.toggle('active', s.dataset.serverId === id));
+      // start listening messages for this server
+      startMessagesForServer(id);
+    }
+
+    // create server modal
+    createServerBtn.addEventListener('click', () => {
+      if (!isAdminLocal()) { showBanner('Admin only'); return; }
+      createServerError.style.display = 'none';
+      newServerName.value = '';
+      createServerModal.style.display = 'flex';
+      newServerName.focus();
+    });
+    createServerCancel.addEventListener('click', () => createServerModal.style.display = 'none');
+    createServerSubmit.addEventListener('click', async () => {
+      const name = (newServerName.value || '').trim();
+      if (!name) { createServerError.textContent = 'Enter a server name'; createServerError.style.display = 'block'; return; }
+      if (!isAdminLocal()) { createServerError.textContent = 'Admin only'; createServerError.style.display = 'block'; return; }
+      try {
+        const id = db.ref(SERVERS_ROOT).push().key;
+        const me = currentUser();
+        await db.ref(`${SERVERS_ROOT}/${id}`).set({ name, createdBy: me.uid, createdAt: now() });
+        createServerModal.style.display = 'none';
+        showBanner('Server created');
+        selectServer(id);
+      } catch (err) {
+        console.error('create server error', err);
+        createServerError.textContent = 'Create failed';
+        createServerError.style.display = 'block';
+      }
+    });
+
+    // messages per-server
+    function startMessagesForServer(serverId) {
+      chatEl.innerHTML = '';
+      messagesRef = db.ref(`${MESSAGES_ROOT}/${serverId}`);
       messagesRef.limitToLast(500).on('child_added', snap => {
         appendChatMessage(snap.val());
       }, err => appendSystemMessage('Listen error: ' + (err && err.message ? err.message : err)));
     }
+
     function appendSystemMessage(text) {
       const el = document.createElement('div');
       el.className = 'msg';
@@ -333,11 +539,12 @@
       chatEl.scrollTop = chatEl.scrollHeight;
     }
 
-    // send message
+    // send message (to current server)
     sendBtn.addEventListener('click', sendMessage);
     msgInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
 
     function sendMessage() {
+      if (!currentServerId) { showBanner('Select a server first'); return; }
       if (isKickedThisSession()) { showBanner('You are kicked this session'); return; }
       if (isBannedLocal()) { showBanner('You are banned'); return; }
       const raw = msgInput.value || '';
@@ -345,7 +552,7 @@
       if (!text) return;
       const u = currentUser();
       const isAdmin = !!u.isAdmin;
-      db.ref(MESSAGES_REF).push({ name: u.username, text, ts: now(), uid: u.uid, isAdmin }).then(()=> {
+      db.ref(`${MESSAGES_ROOT}/${currentServerId}`).push({ name: u.username, text, ts: now(), uid: u.uid, isAdmin }).then(()=> {
         msgInput.value = '';
       }).catch(err => {
         console.error('push error', err);
@@ -353,7 +560,7 @@
       });
     }
 
-    // members list
+    // members list (presence)
     let presenceListener = null;
     function startMembersListener() {
       const ref = db.ref(PRESENCE_ROOT);
@@ -416,7 +623,7 @@
       return h + 'h';
     }
 
-    // member modal
+    // member modal actions (kick/ban)
     let modalTargetUid = null;
     function openMemberModal(uid, info) {
       modalTargetUid = uid;
@@ -434,7 +641,6 @@
     }
     closeModal.addEventListener('click', ()=> memberModal.style.display = 'none');
 
-    // Kick: write to /kicks/{uid} with TTL; clients handle expiry
     kickBtn.addEventListener('click', async () => {
       if (!modalTargetUid) return;
       const u = currentUser();
@@ -450,7 +656,6 @@
       memberModal.style.display = 'none';
     });
 
-    // Ban: write to /bans/{uid}
     banBtn.addEventListener('click', async () => {
       if (!modalTargetUid) return;
       const u = currentUser();
@@ -466,7 +671,7 @@
       memberModal.style.display = 'none';
     });
 
-    // Kick listener: child_added and child_removed; use TTL to auto-clear
+    // kicks & bans listeners (same as before)
     function startKickListener() {
       const ref = db.ref(KICKS_ROOT);
       ref.on('child_added', snap => {
@@ -474,29 +679,24 @@
         const data = snap.val() || {};
         const me = currentUser();
         if (me && me.uid === targetUid) {
-          // set local kicked flag with expiry
           const expiry = (data.ts || now()) + (data.ttl || 30000);
           localStorage.setItem(`kicked_${me.uid}`, String(expiry));
           showKicked();
         }
-        // schedule removal if TTL present (best-effort)
         if (data && data.ttl && data.ts) {
           const removeAt = data.ts + data.ttl;
           const delay = Math.max(0, removeAt - now());
           setTimeout(()=> db.ref(`${KICKS_ROOT}/${targetUid}`).remove().catch(()=>{}), delay + 500);
         }
       });
-
       ref.on('child_removed', snap => {
         const targetUid = snap.key;
-        // clear local kicked flag for removed uid
         localStorage.removeItem(`kicked_${targetUid}`);
         const me = currentUser();
         if (me && me.uid === targetUid) hideKicked();
       });
     }
 
-    // Ban listener
     function startBanListener() {
       const ref = db.ref(BANS_ROOT);
       ref.on('child_added', snap => {
@@ -516,7 +716,7 @@
       });
     }
 
-    // Kicked UI
+    // kicked/banned UI helpers
     function showKicked() { kickedScreen.style.display = 'flex'; }
     function hideKicked() { kickedScreen.style.display = 'none'; }
     function isKickedThisSession() {
@@ -528,14 +728,12 @@
       if (Date.now() > expiry) {
         localStorage.removeItem(`kicked_${me.uid}`);
         hideKicked();
-        // also remove DB entry if still present
         db.ref(`${KICKS_ROOT}/${me.uid}`).remove().catch(()=>{});
         return false;
       }
       return true;
     }
 
-    // Banned UI
     function showBanned() { bannedScreen.style.display = 'flex'; }
     function hideBanned() { bannedScreen.style.display = 'none'; }
     function isBannedLocal() { return !!localStorage.getItem(`banned_${currentUser().uid}`); }
@@ -630,7 +828,7 @@
       displayNameInput.value = u.username || '';
       updateAdminUI();
       startPresence(u.uid, u.username, !!u.isAdmin);
-      startMessages();
+      startServersListener();
       startMembersListener();
       startKickListener();
       startBanListener();
@@ -680,34 +878,13 @@
     });
 
     // close modals on outside click
+    createServerModal.addEventListener('click', (ev) => { if (ev.target === createServerModal) createServerModal.style.display = 'none'; });
     adminModal.addEventListener('click', (ev) => { if (ev.target === adminModal) adminModal.style.display = 'none'; });
     memberModal.addEventListener('click', (ev) => { if (ev.target === memberModal) memberModal.style.display = 'none'; });
     banlandModal.addEventListener('click', (ev) => { if (ev.target === banlandModal) banlandModal.style.display = 'none'; });
 
-    // helper: set username and presence update
-    function setUserName(name) {
-      const u = currentUser();
-      u.username = name;
-      if (localStorage.getItem('admin_logged_in') === '1' && name === ADMIN_USERNAME) u.isAdmin = true;
-      else u.isAdmin = false;
-      saveUser(u);
-      db.ref(`${PRESENCE_ROOT}/${u.uid}`).update({ username: name, isAdmin: u.isAdmin }).catch(()=>{});
-      updateAdminUI();
-    }
-
-    // helper: currentUser
-    function currentUser() {
-      const stored = localStorage.getItem('chat_user');
-      if (stored) return JSON.parse(stored);
-      const guestName = 'Guest-' + Math.random().toString(36).slice(2,8);
-      const uid = 'guest_' + Date.now().toString(36);
-      const user = { username: guestName, uid, isAdmin: false };
-      localStorage.setItem('chat_user', JSON.stringify(user));
-      return user;
-    }
-
-    // small console helpers
-    window.__chatHelpers = { currentUser, isAdminLocal, isBannedLocal, isKickedThisSession, showBanner };
+    // expose helpers for debugging
+    window.__chatHelpers = { currentUser, isAdminLocal, isBannedLocal, isKickedThisSession, showBanner, selectServer };
   </script>
 </body>
 </html>
