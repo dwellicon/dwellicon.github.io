@@ -27,7 +27,7 @@
     .msg-row{display:flex;gap:10px;align-items:flex-end;max-width:85%}
     .msg-row.you{margin-left:auto;flex-direction:row-reverse}
     .avatar{width:36px;height:36px;border-radius:10px;background:#c7d2fe;color:#1e293b;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0}
-    .bubble{padding:10px 12px;border-radius:12px;background:var(--other);box-shadow:0 1px 0 rgba(15,23,36,0.03);position:relative}
+    .bubble{padding:10px 12px;border-radius:12px;background:var(--other);box-shadow:0 1px 0 rgba(15,23,36,0.03);position:relative;word-break:break-word}
     .msg-row.you .bubble{background:var(--you)}
     .meta{display:flex;gap:8px;align-items:center;margin-top:6px;font-size:12px;color:var(--muted)}
     .time{font-size:11px;color:var(--muted)}
@@ -36,12 +36,16 @@
     .input input{flex:1;border:0;background:transparent;padding:8px;font-size:14px;outline:none}
     .send{background:var(--accent);color:white;border:0;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600;box-shadow:0 6px 18px rgba(79,70,229,0.12)}
     .send:active{transform:translateY(1px)}
+    .attach{background:#10b981;color:white;border:0;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:600;box-shadow:0 6px 18px rgba(16,185,129,0.12)}
     .name{width:120px;padding:8px;border-radius:8px;border:1px solid #eef2f7;background:white}
     .muted-note{font-size:12px;color:var(--muted);padding:8px 18px}
+    .progress { font-size:12px;color:var(--muted);padding:6px 10px;border-radius:8px;background:#fff;display:inline-block;margin-top:6px;box-shadow:0 1px 0 rgba(0,0,0,0.03) }
+    img.msg-image{max-width:320px;border-radius:8px;display:block}
     @media (max-width:640px){
       .name{display:none}
       .card{height:86vh}
       .logo{width:36px;height:36px}
+      img.msg-image{max-width:220px}
     }
   </style>
 </head>
@@ -58,14 +62,17 @@
 
       <div id="chat" aria-live="polite"></div>
 
-      <div class="muted-note">Tip: press Enter to send. Your name is saved locally.</div>
+      <div class="muted-note">Tip: press Enter to send. Your name is saved locally. Attach images or files with the paperclip.</div>
 
       <div class="input-bar">
         <input id="name" class="name" type="text" placeholder="Your name" value="Guest" aria-label="Your name">
         <div class="input" role="group" aria-label="Message input">
           <input id="msg" type="text" placeholder="Write a message…" aria-label="Message">
         </div>
+        <button id="attach" class="attach" aria-label="Attach file">Attach</button>
         <button id="send" class="send" aria-label="Send message">Send</button>
+        <!-- hidden file input -->
+        <input id="file" type="file" accept="image/*,video/*,application/pdf" style="display:none">
       </div>
     </div>
   </div>
@@ -73,6 +80,7 @@
   <!-- Firebase compat SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
   <script>
     /* ====== CONFIG: paste your firebaseConfig here ====== */
@@ -88,12 +96,15 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database().ref('messages');
+    const storage = firebase.storage().ref();
 
     // Elements
     const chat = document.getElementById('chat');
     const nameInput = document.getElementById('name');
     const msgInput = document.getElementById('msg');
     const sendBtn = document.getElementById('send');
+    const attachBtn = document.getElementById('attach');
+    const fileInput = document.getElementById('file');
 
     // Persist name
     const savedName = localStorage.getItem('chat_name');
@@ -114,7 +125,7 @@
       return (el.scrollHeight - el.scrollTop - el.clientHeight) < threshold;
     }
 
-    // Render message
+    // Render message (supports text and image/file)
     function renderMessage(data, key){
       const me = (data.name || 'Guest') === (nameInput.value || 'Guest');
       const row = document.createElement('div');
@@ -127,7 +138,41 @@
       bubbleWrap.style.flexDirection = 'column';
       const bubble = document.createElement('div');
       bubble.className = 'bubble';
-      bubble.textContent = data.text;
+
+      // If message contains an image/file URL
+      if (data.imageUrl) {
+        const fileName = data.fileName || '';
+        const lower = (fileName.split('.').pop() || '').toLowerCase();
+        if (lower === 'pdf') {
+          const link = document.createElement('a');
+          link.href = data.imageUrl;
+          link.textContent = fileName || 'PDF';
+          link.target = '_blank';
+          bubble.appendChild(link);
+        } else if (/(mp4|webm|ogg)$/i.test(lower) || /video\//.test(data.contentType || '')) {
+          const vid = document.createElement('video');
+          vid.src = data.imageUrl;
+          vid.controls = true;
+          vid.style.maxWidth = '320px';
+          bubble.appendChild(vid);
+        } else {
+          const img = document.createElement('img');
+          img.className = 'msg-image';
+          img.src = data.imageUrl;
+          img.alt = fileName || 'image';
+          img.addEventListener('click', () => window.open(data.imageUrl, '_blank'));
+          bubble.appendChild(img);
+        }
+        if (data.text) {
+          const caption = document.createElement('div');
+          caption.style.marginTop = '8px';
+          caption.textContent = data.text;
+          bubble.appendChild(caption);
+        }
+      } else {
+        bubble.textContent = data.text;
+      }
+
       const meta = document.createElement('div');
       meta.className = 'meta';
       const nameEl = document.createElement('div');
@@ -139,6 +184,7 @@
       timeEl.textContent = timeFmt(data.ts || Date.now());
       meta.appendChild(nameEl);
       meta.appendChild(timeEl);
+
       bubbleWrap.appendChild(bubble);
       bubbleWrap.appendChild(meta);
       row.appendChild(avatar);
@@ -155,8 +201,8 @@
       renderMessage(data, snap.key);
     });
 
-    // Send
-    function send(){
+    // Send text message
+    function sendText(){
       const raw = msgInput.value || '';
       const text = raw.replace(/\r?\n|\r/g,' ').trim().slice(0,300);
       const name = (nameInput.value || 'Guest').trim().slice(0,50) || 'Guest';
@@ -166,8 +212,108 @@
         .catch(e => console.error('send error', e));
     }
 
-    sendBtn.addEventListener('click', send);
-    msgInput.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+    sendBtn.addEventListener('click', sendText);
+    msgInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendText(); });
+
+    // Attach flow
+    attachBtn.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // Validation
+      const maxBytes = 5 * 1024 * 1024; // 5 MB
+      const allowedPrefixes = ['image/', 'video/', 'application/pdf'];
+      if (!allowedPrefixes.some(p => file.type.startsWith(p))) {
+        alert('Unsupported file type. Allowed: images, videos, PDFs.');
+        fileInput.value = '';
+        return;
+      }
+      if (file.size > maxBytes) {
+        alert('File too large (max 5 MB).');
+        fileInput.value = '';
+        return;
+      }
+
+      // Optional resize for images
+      let uploadBlob = file;
+      if (file.type.startsWith('image/')) {
+        try {
+          uploadBlob = await resizeImage(file, 1200);
+        } catch (err) {
+          console.warn('resize failed, uploading original', err);
+          uploadBlob = file;
+        }
+      }
+
+      // Create unique path
+      const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+      const path = `uploads/${firebaseConfig.projectId}/${Date.now()}_${safeName}`;
+      const fileRef = storage.child(path);
+
+      // Show progress element
+      const progressEl = document.createElement('div');
+      progressEl.className = 'progress';
+      progressEl.textContent = `Uploading ${file.name} — 0%`;
+      chat.appendChild(progressEl);
+      chat.scrollTop = chat.scrollHeight;
+
+      const uploadTask = fileRef.put(uploadBlob, { contentType: file.type });
+      uploadTask.on('state_changed', snapshot => {
+        const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+        progressEl.textContent = `Uploading ${file.name} — ${pct}%`;
+      }, err => {
+        console.error('upload error', err);
+        progressEl.textContent = 'Upload failed';
+        setTimeout(() => progressEl.remove(), 3000);
+      }, async () => {
+        try {
+          const url = await fileRef.getDownloadURL();
+          progressEl.remove();
+          const name = (nameInput.value || 'Guest').trim().slice(0,50) || 'Guest';
+          db.push({
+            name,
+            text: '', // optional caption could be added
+            imageUrl: url,
+            fileName: file.name,
+            contentType: file.type,
+            ts: Date.now()
+          }).catch(e => console.error('push error', e));
+        } catch (err) {
+          console.error('getDownloadURL error', err);
+          progressEl.textContent = 'Upload failed';
+          setTimeout(() => progressEl.remove(), 3000);
+        }
+      });
+
+      fileInput.value = '';
+    });
+
+    // Helper: resize image using canvas, returns a Blob
+    function resizeImage(file, maxWidth = 1200) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const reader = new FileReader();
+        reader.onload = e => { img.src = e.target.result; };
+        img.onerror = reject;
+        img.onload = () => {
+          const ratio = img.width / img.height;
+          const width = Math.min(maxWidth, img.width);
+          const height = Math.round(width / ratio);
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob(blob => {
+            if (blob) resolve(blob);
+            else reject(new Error('Canvas toBlob failed'));
+          }, file.type || 'image/jpeg', 0.85);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
 
     // Small UX: focus message input on load
     window.addEventListener('load', () => msgInput.focus());
