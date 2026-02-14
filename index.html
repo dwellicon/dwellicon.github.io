@@ -11,6 +11,7 @@
       --muted:#7b8794;
       --accent:#4f46e5;
       --admin-yellow:#f59e0b;
+      --system-gray:#6b7280;
       --shadow: 0 8px 30px rgba(20,30,60,0.06);
     }
     html,body{height:100%;margin:0;background:linear-gradient(180deg,#eef6ff 0%,var(--bg) 100%);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;color:#0f1724}
@@ -45,6 +46,10 @@
     .msg{padding:10px;background:#fff;border-radius:10px;box-shadow:0 1px 0 rgba(0,0,0,0.03);max-width:70%;word-break:break-word;position:relative}
     .msg .meta{font-size:12px;color:var(--muted);margin-bottom:6px;display:flex;gap:8px;align-items:center}
     .admin-badge{background:var(--admin-yellow);color:#1f2937;padding:2px 8px;border-radius:999px;font-weight:700;font-size:11px}
+    .system-badge{background:var(--system-gray);color:white;padding:2px 8px;border-radius:999px;font-weight:700;font-size:11px}
+    .msg .actions{position:absolute;right:8px;top:8px;display:flex;gap:6px}
+    .msg .actions button{background:transparent;border:0;color:var(--muted);cursor:pointer;padding:4px;border-radius:6px}
+    .msg.system{background:#f3f4f6;color:#374151}
     .input-bar{display:flex;gap:10px;padding:12px;border-top:1px solid #eef2f7;background:#f8fafc;align-items:center}
     .input{flex:1;display:flex;gap:8px;align-items:center;background:#fff;padding:8px;border-radius:10px;border:1px solid #eef2f7}
     .input input{flex:1;border:0;background:transparent;padding:8px;font-size:14px;outline:none}
@@ -638,7 +643,10 @@
         }
       }
 
-      if (messagesRef) messagesRef.off();
+      if (messagesRef) {
+        messagesRef.off();
+        messagesRef = null;
+      }
 
       currentServerId = id;
 
@@ -794,23 +802,35 @@
       chatEl.innerHTML = '';
       messagesRef = db.ref(`${MESSAGES_ROOT}/${serverId}`);
       messagesRef.limitToLast(500).on('child_added', snap => {
-        appendChatMessage(snap.val());
+        appendChatMessage(snap.key, snap.val());
       }, err => appendSystemMessage('Listen error: ' + (err && err.message ? err.message : err)));
+      messagesRef.on('child_removed', snap => {
+        removeChatMessage(snap.key);
+      });
     }
 
     function appendSystemMessage(text) {
       const el = document.createElement('div');
-      el.className = 'msg';
-      el.style.opacity = '0.9';
+      el.className = 'msg system';
       el.textContent = text;
       chatEl.appendChild(el);
       chatEl.scrollTop = chatEl.scrollHeight;
     }
-    function appendChatMessage(data) {
+
+    // Append a chat message with controls for deletion (if allowed)
+    function appendChatMessage(msgId, data) {
+      if (!data) return;
       const el = document.createElement('div');
       el.className = 'msg';
+      el.dataset.msgid = msgId;
+
+      if (data.isSystem) {
+        el.classList.add('system');
+      }
+
       const meta = document.createElement('div');
       meta.className = 'meta';
+
       const nameSpan = document.createElement('span');
       nameSpan.textContent = data.name || 'Guest';
       meta.appendChild(nameSpan);
@@ -820,6 +840,11 @@
         badge.className = 'admin-badge';
         badge.textContent = 'ADMIN';
         meta.appendChild(badge);
+      } else if (data.isSystem) {
+        const sBadge = document.createElement('span');
+        sBadge.className = 'system-badge';
+        sBadge.textContent = 'SYSTEM';
+        meta.appendChild(sBadge);
       }
 
       const timeSpan = document.createElement('span');
@@ -830,17 +855,86 @@
 
       const body = document.createElement('div');
       body.textContent = data.text || '';
+
       el.appendChild(meta);
       el.appendChild(body);
+
+      // actions (delete) - only for non-system messages
+      if (!data.isSystem) {
+        const actions = document.createElement('div');
+        actions.className = 'actions';
+
+        const me = currentUser();
+        const canDelete = (me && (me.uid === data.uid)) || isAdminLocal();
+
+        if (canDelete) {
+          const delBtn = document.createElement('button');
+          delBtn.title = 'Delete message';
+          delBtn.innerHTML = '🗑';
+          delBtn.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            confirmAndDeleteMessage(msgId, data);
+          });
+          actions.appendChild(delBtn);
+        }
+
+        el.appendChild(actions);
+      }
+
       chatEl.appendChild(el);
       chatEl.scrollTop = chatEl.scrollHeight;
     }
 
-    // send message
+    function removeChatMessage(msgId) {
+      const el = chatEl.querySelector(`[data-msgid="${msgId}"]`);
+      if (el) el.remove();
+    }
+
+    // Delete flow: confirm, remove from DB, push system notification
+    async function confirmAndDeleteMessage(msgId, data) {
+      const me = currentUser();
+      if (!me) return;
+      const isOwner = me.uid === data.uid;
+      const isAdmin = isAdminLocal();
+      if (!isOwner && !isAdmin) { showBanner('Not allowed'); return; }
+
+      const ok = confirm('Delete this message? This action cannot be undone.');
+      if (!ok) return;
+
+      try {
+        // remove the message node
+        await db.ref(`${MESSAGES_ROOT}/${currentServerId}/${msgId}`).remove();
+
+        // create system notification message describing deletion
+        let sysText = '';
+        if (isOwner && !isAdmin) {
+          sysText = `${me.username} deleted their message`;
+        } else if (isAdmin && !isOwner) {
+          const targetName = data.name || 'a user';
+          sysText = `${me.username} (admin) deleted a message by ${targetName}`;
+        } else if (isAdmin && isOwner) {
+          sysText = `${me.username} deleted their message`;
+        } else {
+          sysText = `A message was deleted`;
+        }
+
+        await db.ref(`${MESSAGES_ROOT}/${currentServerId}`).push({
+          name: 'System',
+          text: sysText,
+          ts: now(),
+          isSystem: true
+        });
+      } catch (err) {
+        console.error('delete message error', err);
+        showBanner('Delete failed');
+      }
+    }
+
+    // send message (to current server)
     sendBtn.addEventListener('click', sendMessage);
     msgInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
 
-    function sendMessage() {
+    async function sendMessage() {
       if (!currentServerId) { showBanner('Select a server first'); return; }
       if (isKickedThisSession()) { showBanner('You are kicked this session'); return; }
       if (isBannedLocal()) { showBanner('You are banned'); return; }
@@ -849,15 +943,16 @@
       if (!text) return;
       const u = currentUser();
       const isAdmin = !!u.isAdmin;
-      db.ref(`${MESSAGES_ROOT}/${currentServerId}`).push({ name: u.username, text, ts: now(), uid: u.uid, isAdmin }).then(()=> {
+      try {
+        await db.ref(`${MESSAGES_ROOT}/${currentServerId}`).push({ name: u.username, text, ts: now(), uid: u.uid, isAdmin });
         msgInput.value = '';
-      }).catch(err => {
+      } catch (err) {
         console.error('push error', err);
         appendSystemMessage('Send failed: ' + (err && err.message ? err.message : err));
-      });
+      }
     }
 
-    // members list
+    // members list (presence)
     function startMembersListener() {
       const ref = db.ref(PRESENCE_ROOT);
       ref.on('value', snap => {
@@ -917,7 +1012,7 @@
       return h + 'h';
     }
 
-    // member modal actions
+    // member modal actions (kick/ban)
     let modalTargetUid = null;
     function openMemberModal(uid, info) {
       modalTargetUid = uid;
@@ -940,7 +1035,7 @@
       const u = currentUser();
       if (!isAdminLocal()) { showBanner('Admin only'); return; }
       try {
-        const ttl = 30_000;
+        const ttl = 30_000; // 30 seconds
         await db.ref(`${KICKS_ROOT}/${modalTargetUid}`).set({ ts: now(), by: u.uid, byName: u.username, ttl });
         showBanner('Kick sent (30s)');
       } catch (err) {
@@ -1102,6 +1197,7 @@
       }
     });
 
+    // Admin logout
     adminLogoutBtn.addEventListener('click', () => {
       const me = currentUser();
       me.isAdmin = false;
