@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Chat with Members & Admin Tools (Fixed)</title>
+  <title>Chat with Members & Admin Tools (Admin via Login Only)</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     :root{
@@ -261,7 +261,6 @@
     function updateAdminUI() {
       if (isAdminLocal()) {
         adminLogoutBtn.style.display = 'inline-block';
-        // show admin hint next to Members
         document.getElementById('adminHint').textContent = 'admin view';
       } else {
         adminLogoutBtn.style.display = 'none';
@@ -312,8 +311,8 @@
       nameSpan.textContent = data.name || 'Guest';
       meta.appendChild(nameSpan);
 
-      // show admin badge if message flagged or name is Kyson
-      if (data.isAdmin || (data.name === ADMIN_USERNAME)) {
+      // show admin badge only when data.isAdmin is true
+      if (data.isAdmin) {
         const badge = document.createElement('span');
         badge.className = 'admin-badge';
         badge.textContent = 'ADMIN';
@@ -385,8 +384,8 @@
         const name = document.createElement('div');
         name.className = 'name';
         name.textContent = info.username || uid;
-        // show admin badge if presence says isAdmin or username is Kyson
-        if (info.isAdmin || (info.username === ADMIN_USERNAME)) {
+        // show admin badge only when presence info.isAdmin is true
+        if (info.isAdmin) {
           const adminTag = document.createElement('span');
           adminTag.className = 'admin-badge';
           adminTag.textContent = 'ADMIN';
@@ -615,7 +614,6 @@
     adminLogoutBtn.addEventListener('click', () => {
       const me = currentUser();
       me.isAdmin = false;
-      // if username was Kyson, keep the name but remove admin flag
       saveUser(me);
       localStorage.removeItem('admin_logged_in');
       db.ref(`${PRESENCE_ROOT}/${me.uid}`).update({ isAdmin: false }).catch(()=>{});
@@ -713,4 +711,3 @@
   </script>
 </body>
 </html>
-
