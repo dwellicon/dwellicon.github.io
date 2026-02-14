@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Live Chat</title>
+  <title>Live Chat (with uploads)</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
     :root{
@@ -41,6 +41,8 @@
     .muted-note{font-size:12px;color:var(--muted);padding:8px 18px}
     .progress { font-size:12px;color:var(--muted);padding:6px 10px;border-radius:8px;background:#fff;display:inline-block;margin-top:6px;box-shadow:0 1px 0 rgba(0,0,0,0.03) }
     img.msg-image{max-width:320px;border-radius:8px;display:block}
+    .error-box{background:#fff6f6;border:1px solid #ffd6d6;color:#7b1d1d;padding:10px;border-radius:8px;margin:12px 18px;display:none}
+    .help-box{background:#fffef6;border:1px solid #fff1b8;color:#6b4b00;padding:10px;border-radius:8px;margin:12px 18px;display:none;white-space:pre-wrap;font-family:monospace;font-size:13px}
     @media (max-width:640px){
       .name{display:none}
       .card{height:86vh}
@@ -64,6 +66,9 @@
 
       <div class="muted-note">Tip: press Enter to send. Your name is saved locally. Attach images or files with the paperclip.</div>
 
+      <div id="error" class="error-box" role="alert"></div>
+      <div id="help" class="help-box" aria-hidden="true"></div>
+
       <div class="input-bar">
         <input id="name" class="name" type="text" placeholder="Your name" value="Guest" aria-label="Your name">
         <div class="input" role="group" aria-label="Message input">
@@ -81,6 +86,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
   <script>
     /* ====== CONFIG: paste your firebaseConfig here ====== */
@@ -94,9 +100,13 @@
       appId: "1:634657717896:web:27f246614fdb2c2398a93d",
       measurementId: "G-GP1YBL86RB"
     };
+    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
+
+    // Services
     const db = firebase.database().ref('messages');
-    const storage = firebase.storage().ref();
+    const storageRoot = firebase.storage().ref();
+    const auth = firebase.auth();
 
     // Elements
     const chat = document.getElementById('chat');
@@ -105,11 +115,25 @@
     const sendBtn = document.getElementById('send');
     const attachBtn = document.getElementById('attach');
     const fileInput = document.getElementById('file');
+    const errorBox = document.getElementById('error');
+    const helpBox = document.getElementById('help');
 
     // Persist name
     const savedName = localStorage.getItem('chat_name');
     if (savedName) nameInput.value = savedName;
     nameInput.addEventListener('change', () => localStorage.setItem('chat_name', nameInput.value.trim()));
+
+    // Anonymous auth (so uploads can be restricted to authenticated users)
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        console.log('signed in anonymously', user.uid);
+      } else {
+        auth.signInAnonymously().catch(err => {
+          console.error('auth error', err);
+          showError('Authentication failed. Uploads may not work.');
+        });
+      }
+    });
 
     // Helpers
     function initials(name){
@@ -118,6 +142,24 @@
     function timeFmt(ts){
       const d = new Date(ts);
       return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    }
+    function showError(msg){
+      errorBox.style.display = 'block';
+      errorBox.textContent = msg;
+    }
+    function hideError(){
+      errorBox.style.display = 'none';
+      errorBox.textContent = '';
+    }
+    function showHelp(text){
+      helpBox.style.display = 'block';
+      helpBox.setAttribute('aria-hidden','false');
+      helpBox.textContent = text;
+    }
+    function hideHelp(){
+      helpBox.style.display = 'none';
+      helpBox.setAttribute('aria-hidden','true');
+      helpBox.textContent = '';
     }
 
     // Auto-scroll only if user is near bottom
@@ -199,17 +241,25 @@
     db.limitToLast(200).on('child_added', snap => {
       const data = snap.val();
       renderMessage(data, snap.key);
+    }, err => {
+      console.error('listen error', err);
+      showError('Realtime DB listen error: ' + (err && err.message ? err.message : String(err)));
     });
 
     // Send text message
     function sendText(){
+      hideError();
+      hideHelp();
       const raw = msgInput.value || '';
       const text = raw.replace(/\r?\n|\r/g,' ').trim().slice(0,300);
       const name = (nameInput.value || 'Guest').trim().slice(0,50) || 'Guest';
       if (!text) return;
       db.push({ name, text, ts: Date.now() })
         .then(()=> msgInput.value = '')
-        .catch(e => console.error('send error', e));
+        .catch(e => {
+          console.error('send error', e);
+          showError('Send failed: ' + (e && e.message ? e.message : String(e)));
+        });
     }
 
     sendBtn.addEventListener('click', sendText);
@@ -219,6 +269,8 @@
     attachBtn.addEventListener('click', () => fileInput.click());
 
     fileInput.addEventListener('change', async (e) => {
+      hideError();
+      hideHelp();
       const file = e.target.files[0];
       if (!file) return;
 
@@ -226,12 +278,12 @@
       const maxBytes = 5 * 1024 * 1024; // 5 MB
       const allowedPrefixes = ['image/', 'video/', 'application/pdf'];
       if (!allowedPrefixes.some(p => file.type.startsWith(p))) {
-        alert('Unsupported file type. Allowed: images, videos, PDFs.');
+        showError('Unsupported file type. Allowed: images, videos, PDFs.');
         fileInput.value = '';
         return;
       }
       if (file.size > maxBytes) {
-        alert('File too large (max 5 MB).');
+        showError('File too large (max 5 MB).');
         fileInput.value = '';
         return;
       }
@@ -250,7 +302,7 @@
       // Create unique path
       const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
       const path = `uploads/${firebaseConfig.projectId}/${Date.now()}_${safeName}`;
-      const fileRef = storage.child(path);
+      const fileRef = storageRoot.child(path);
 
       // Show progress element
       const progressEl = document.createElement('div');
@@ -259,6 +311,7 @@
       chat.appendChild(progressEl);
       chat.scrollTop = chat.scrollHeight;
 
+      // Upload with error handling for CORS and permission issues
       const uploadTask = fileRef.put(uploadBlob, { contentType: file.type });
       uploadTask.on('state_changed', snapshot => {
         const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
@@ -267,6 +320,14 @@
         console.error('upload error', err);
         progressEl.textContent = 'Upload failed';
         setTimeout(() => progressEl.remove(), 3000);
+
+        // Detect CORS preflight failure (common when bucket CORS not configured)
+        if (err && err.code && (err.code === 'storage/unauthorized' || err.code === 'storage/unknown')) {
+          showError('Upload blocked by CORS or permission error. See instructions below to fix bucket CORS.');
+          showCorsInstructions();
+        } else {
+          showError('Upload failed: ' + (err && err.message ? err.message : String(err)));
+        }
       }, async () => {
         try {
           const url = await fileRef.getDownloadURL();
@@ -279,11 +340,15 @@
             fileName: file.name,
             contentType: file.type,
             ts: Date.now()
-          }).catch(e => console.error('push error', e));
+          }).catch(e => {
+            console.error('push error', e);
+            showError('Failed to post message: ' + (e && e.message ? e.message : String(e)));
+          });
         } catch (err) {
           console.error('getDownloadURL error', err);
           progressEl.textContent = 'Upload failed';
           setTimeout(() => progressEl.remove(), 3000);
+          showError('Failed to get file URL after upload. ' + (err && err.message ? err.message : String(err)));
         }
       });
 
@@ -313,6 +378,20 @@
         };
         reader.readAsDataURL(file);
       });
+    }
+
+    // Show CORS instructions (visible on upload CORS failure)
+    function showCorsInstructions(){
+      const corsJson = `[
+  {
+    "origin": ["https://dwellicon.github.io", "http://localhost:5500"],
+    "method": ["GET", "POST", "PUT", "HEAD", "OPTIONS"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": ["Content-Type", "x-goog-resumable"]
+  }
+]`;
+      const gsutilCmd = `# Install and authenticate the Google Cloud SDK, then run:\ngsutil cors set cors.json gs://dwellicon-42e72.appspot.com\n\n# Where cors.json contains the JSON above.`;
+      showHelp('CORS or permission error detected.\n\n1) Create a file named cors.json with this content:\n\n' + corsJson + '\n\n2) Run this command from a machine with gsutil authenticated for your Firebase project:\n\n' + gsutilCmd + '\n\nIf you cannot run gsutil, use the Firebase CLI or Cloud Console instructions for configuring Storage CORS. After applying CORS, retry the upload.');
     }
 
     // Small UX: focus message input on load
