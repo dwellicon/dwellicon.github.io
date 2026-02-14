@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Chat with Members List</title>
+  <title>Chat with Members & Admin Tools</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     :root{
@@ -10,165 +10,67 @@
       --card:#ffffff;
       --muted:#7b8794;
       --accent:#4f46e5;
+      --admin-yellow:#f59e0b;
       --you:#e9f0ff;
-      --other:#ffffff;
       --shadow: 0 8px 30px rgba(20,30,60,0.06);
     }
-    html,body{
-      height:100%;
-      margin:0;
-      background:linear-gradient(180deg,#eef6ff 0%,var(--bg) 100%);
-      font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;
-      color:#0f1724;
-    }
-
-    /* Layout: left chat, right members */
-    .layout {
-      display:flex;
-      height:100vh;
-      gap:0;
-      align-items:stretch;
-    }
-
-    /* Chat column (left) */
-    .chat-column {
-      flex: 1 1 0;
-      display:flex;
-      flex-direction:column;
-      background:var(--card);
-      border-right:1px solid #e6edf6;
-      box-shadow: var(--shadow);
-      min-width: 0;
-    }
-
-    header {
-      display:flex;
-      align-items:center;
-      gap:12px;
-      padding:14px 18px;
-      border-bottom:1px solid #eef2f7;
-      background:linear-gradient(90deg, rgba(79,70,229,0.02), transparent);
-    }
-    .logo {
-      width:44px;height:44px;border-radius:10px;
-      background:linear-gradient(135deg,var(--accent),#06b6d4);
-      display:flex;align-items:center;justify-content:center;color:white;font-weight:700;
-    }
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#eef6ff 0%,var(--bg) 100%);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;color:#0f1724}
+    .layout{display:flex;height:100vh;align-items:stretch}
+    .chat-column{flex:1;display:flex;flex-direction:column;background:var(--card);border-right:1px solid #e6edf6;box-shadow:var(--shadow);min-width:0}
+    header{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid #eef2f7;background:linear-gradient(90deg, rgba(79,70,229,0.02), transparent)}
+    .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#06b6d4);display:flex;align-items:center;justify-content:center;color:white;font-weight:700}
     header h1{font-size:16px;margin:0}
     header p{margin:0;color:var(--muted);font-size:13px}
-
-    /* small name input in header */
-    .header-right { margin-left:auto; display:flex; gap:10px; align-items:center; }
-    .name-input { padding:8px 10px; border-radius:8px; border:1px solid #eef2f7; width:160px; }
-
-    /* Chat area */
-    #chat {
-      flex:1;
-      padding:18px;
-      overflow:auto;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      background:linear-gradient(180deg,rgba(79,70,229,0.02),transparent);
-    }
-    .msg {
-      padding:10px;
-      background:#fff;
-      border-radius:10px;
-      box-shadow:0 1px 0 rgba(0,0,0,0.03);
-      max-width:70%;
-      word-break:break-word;
-    }
-    .msg .meta { font-size:12px;color:var(--muted);margin-bottom:6px; }
-
-    /* Input bar */
-    .input-bar {
-      display:flex;
-      gap:10px;
-      padding:12px;
-      border-top:1px solid #eef2f7;
-      background:#f8fafc;
-      align-items:center;
-    }
-    .input-bar .input {
-      flex:1;
-      display:flex;
-      gap:8px;
-      align-items:center;
-      background:#fff;
-      padding:8px;
-      border-radius:10px;
-      border:1px solid #eef2f7;
-    }
-    .input-bar input[type="text"]{
-      flex:1;border:0;background:transparent;padding:8px;font-size:14px;outline:none;
-    }
-    .btn {
-      padding:10px 14px;border-radius:10px;border:0;cursor:pointer;font-weight:600;
-    }
-    .btn.send { background:var(--accent); color:#fff; box-shadow:0 6px 18px rgba(79,70,229,0.12); }
-    .btn.attach { background:#10b981; color:#fff; }
-
-    /* Right column: members */
-    .members-column {
-      width:300px;
-      min-width:220px;
-      max-width:360px;
-      background:#fbfdff;
-      border-left:1px solid #e6edf6;
-      display:flex;
-      flex-direction:column;
-      gap:0;
-    }
-    .members-header {
-      padding:14px 16px;
-      border-bottom:1px solid #eef2f7;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:8px;
-    }
-    .members-header h3 { margin:0;font-size:14px; }
-    .members-list {
-      padding:12px;
-      overflow:auto;
-      flex:1;
-    }
-    .member {
-      display:flex;
-      gap:10px;
-      align-items:center;
-      padding:8px;
-      border-radius:8px;
-      transition:background .12s;
-    }
-    .member:hover { background:rgba(15,23,36,0.03); }
-    .member .avatar {
-      width:40px;height:40px;border-radius:8px;background:#c7d2fe;color:#0f1724;display:flex;align-items:center;justify-content:center;font-weight:700;
-    }
-    .member .info { display:flex;flex-direction:column; }
-    .member .name { font-weight:600; font-size:14px; }
-    .member .status { font-size:12px;color:var(--muted); }
-
-    @media (max-width:900px){
-      .members-column{display:none}
-    }
+    .header-right{margin-left:auto;display:flex;gap:10px;align-items:center}
+    .name-input{padding:8px 10px;border-radius:8px;border:1px solid #eef2f7;width:160px}
+    #chat{flex:1;padding:18px;overflow:auto;display:flex;flex-direction:column;gap:10px;background:linear-gradient(180deg,rgba(79,70,229,0.02),transparent)}
+    .msg{padding:10px;background:#fff;border-radius:10px;box-shadow:0 1px 0 rgba(0,0,0,0.03);max-width:70%;word-break:break-word;position:relative}
+    .msg .meta{font-size:12px;color:var(--muted);margin-bottom:6px;display:flex;gap:8px;align-items:center}
+    .admin-badge{background:var(--admin-yellow);color:#1f2937;padding:2px 8px;border-radius:999px;font-weight:700;font-size:11px}
+    .input-bar{display:flex;gap:10px;padding:12px;border-top:1px solid #eef2f7;background:#f8fafc;align-items:center}
+    .input{flex:1;display:flex;gap:8px;align-items:center;background:#fff;padding:8px;border-radius:10px;border:1px solid #eef2f7}
+    .input input{flex:1;border:0;background:transparent;padding:8px;font-size:14px;outline:none}
+    .btn{padding:10px 14px;border-radius:10px;border:0;cursor:pointer;font-weight:600}
+    .btn.send{background:var(--accent);color:#fff}
+    .btn.attach{background:#10b981;color:#fff}
+    .members-column{width:300px;min-width:220px;max-width:360px;background:#fbfdff;border-left:1px solid #e6edf6;display:flex;flex-direction:column}
+    .members-header{padding:14px 16px;border-bottom:1px solid #eef2f7;display:flex;align-items:center;justify-content:space-between}
+    .members-header h3{margin:0;font-size:14px}
+    .members-list{padding:12px;overflow:auto;flex:1}
+    .member{display:flex;gap:10px;align-items:center;padding:8px;border-radius:8px;transition:background .12s;cursor:pointer}
+    .member:hover{background:rgba(15,23,36,0.03)}
+    .member .avatar{width:40px;height:40px;border-radius:8px;background:#c7d2fe;color:#0f1724;display:flex;align-items:center;justify-content:center;font-weight:700}
+    .member .info{display:flex;flex-direction:column}
+    .member .name{font-weight:600;font-size:14px;display:flex;gap:8px;align-items:center}
+    .member .status{font-size:12px;color:var(--muted)}
+    /* overlays and modals */
+    .overlay{position:fixed;inset:0;background:rgba(10,12,20,0.45);display:flex;align-items:center;justify-content:center;z-index:999;display:none}
+    .modal{background:white;padding:16px;border-radius:10px;min-width:320px;box-shadow:0 12px 40px rgba(10,20,40,0.3)}
+    .modal h3{margin:0 0 8px 0}
+    .modal .row{display:flex;gap:8px;margin-top:12px}
+    .danger{background:#ef4444;color:white}
+    .muted{color:var(--muted);font-size:13px}
+    /* small banners */
+    .banner{position:fixed;left:16px;bottom:16px;background:#fff;padding:10px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.08);font-size:13px}
+    /* kicked / banned full-screen */
+    .block-screen{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:1000;color:white;font-size:18px;display:none}
+    .block-screen .card{background:rgba(255,255,255,0.06);padding:20px;border-radius:10px;text-align:center}
+    @media (max-width:900px){.members-column{display:none}}
   </style>
 </head>
 <body>
   <div class="layout">
-    <!-- Chat column -->
     <div class="chat-column">
       <header>
         <div class="logo">C</div>
         <div>
           <h1>Private Chat</h1>
-          <p>Real-time messages powered by Firebase</p>
+          <p class="muted">Real-time messages — admin: Kyson</p>
         </div>
 
         <div class="header-right">
           <input id="displayNameInput" class="name-input" type="text" placeholder="Your name">
-          <button id="signOutBtn" class="btn" style="background:#ef4444;color:#fff;display:none">Sign out</button>
+          <button id="banlandBtn" class="btn" title="Alt+X to open Banland" style="background:#f59e0b;color:#fff;display:none">Banland</button>
         </div>
       </header>
 
@@ -183,24 +85,63 @@
       </div>
     </div>
 
-    <!-- Members column -->
     <aside class="members-column" aria-label="Members">
       <div class="members-header">
         <h3>Members</h3>
-        <div id="onlineCount" class="small">0 online</div>
+        <div id="onlineCount" class="muted">0 online</div>
       </div>
-      <div class="members-list" id="membersList">
-        <!-- live members will be appended here -->
-      </div>
+      <div class="members-list" id="membersList"></div>
     </aside>
   </div>
 
-  <!-- Firebase SDKs -->
+  <!-- Member action modal -->
+  <div id="memberModal" class="overlay">
+    <div class="modal" role="dialog" aria-modal="true">
+      <h3 id="modalName">Member</h3>
+      <div id="modalUid" class="muted" style="font-size:12px"></div>
+      <div style="margin-top:10px" id="modalStatus" class="muted"></div>
+      <div class="row" style="margin-top:12px">
+        <button id="kickBtn" class="btn danger">Kick</button>
+        <button id="banBtn" class="btn" style="background:#6b7280;color:#fff">Ban</button>
+        <button id="closeModal" class="btn" style="background:#e5e7eb">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Banland modal -->
+  <div id="banlandModal" class="overlay">
+    <div class="modal" role="dialog" aria-modal="true">
+      <h3>Banland (unban)</h3>
+      <div id="banList" style="max-height:300px;overflow:auto;margin-top:8px"></div>
+      <div class="row" style="margin-top:12px">
+        <button id="closeBanland" class="btn" style="background:#e5e7eb">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kicked / Banned full-screen blocks -->
+  <div id="kickedScreen" class="block-screen">
+    <div class="card">
+      <div style="font-size:20px;font-weight:700">You were kicked</div>
+      <div style="margin-top:8px">You cannot send messages in this session. Refresh to rejoin.</div>
+    </div>
+  </div>
+
+  <div id="bannedScreen" class="block-screen">
+    <div class="card">
+      <div style="font-size:20px;font-weight:700">You are banned</div>
+      <div style="margin-top:8px">This browser is banned from this chat. Unban from Banland to restore access.</div>
+    </div>
+  </div>
+
+  <div id="banner" class="banner" style="display:none"></div>
+
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
   <script>
-    // ====== CONFIG: paste your firebaseConfig here ======
+    /* ====== CONFIG: paste your firebaseConfig here ====== */
     const firebaseConfig = {
       apiKey: "AIzaSyAulcwmA2r2Z0Wv5mxyuWwQvPv05E8HvMU",
       authDomain: "dwellicon-42e72.firebaseapp.com",
@@ -214,28 +155,42 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // UI elements
+    // DOM
     const chatEl = document.getElementById('chat');
     const msgInput = document.getElementById('msg');
     const sendBtn = document.getElementById('send');
     const attachBtn = document.getElementById('attach');
     const displayNameInput = document.getElementById('displayNameInput');
-    const signOutBtn = document.getElementById('signOutBtn');
-
     const membersListEl = document.getElementById('membersList');
     const onlineCountEl = document.getElementById('onlineCount');
+    const banner = document.getElementById('banner');
 
-    // Presence root path
+    const memberModal = document.getElementById('memberModal');
+    const modalName = document.getElementById('modalName');
+    const modalUid = document.getElementById('modalUid');
+    const modalStatus = document.getElementById('modalStatus');
+    const kickBtn = document.getElementById('kickBtn');
+    const banBtn = document.getElementById('banBtn');
+    const closeModal = document.getElementById('closeModal');
+
+    const banlandModal = document.getElementById('banlandModal');
+    const banListEl = document.getElementById('banList');
+    const banlandBtn = document.getElementById('banlandBtn');
+    const closeBanland = document.getElementById('closeBanland');
+
+    const kickedScreen = document.getElementById('kickedScreen');
+    const bannedScreen = document.getElementById('bannedScreen');
+
+    // DB paths
     const PRESENCE_ROOT = 'presence';
-
-    // Messages ref
     const MESSAGES_REF = 'messages';
+    const KICKS_ROOT = 'kicks';
+    const BANS_ROOT = 'bans';
 
-    // Local session: if user hasn't set a name, create a guest name
+    // local session helpers
     function currentUser() {
       const stored = localStorage.getItem('chat_user');
       if (stored) return JSON.parse(stored);
-      // create a guest identity
       const guestName = 'Guest-' + Math.random().toString(36).slice(2,8);
       const uid = 'guest_' + Date.now().toString(36);
       const user = { username: guestName, uid };
@@ -243,63 +198,53 @@
       return user;
     }
 
-    // Allow user to change display name in header
-    const user = currentUser();
-    displayNameInput.value = user.username || '';
-    displayNameInput.addEventListener('change', () => {
-      const newName = (displayNameInput.value || '').trim() || user.username;
-      const updated = { ...user, username: newName };
-      localStorage.setItem('chat_user', JSON.stringify(updated));
+    function setUserName(name) {
+      const u = currentUser();
+      u.username = name;
+      localStorage.setItem('chat_user', JSON.stringify(u));
       // update presence record if exists
-      db.ref(`${PRESENCE_ROOT}/${updated.uid}`).update({ username: newName }).catch(()=>{});
-    });
-
-    // Presence: write presence record and set onDisconnect removal
-    let presenceRef = null;
-    function startPresence(uid, username) {
-      try {
-        presenceRef = db.ref(`${PRESENCE_ROOT}/${uid}`);
-        const data = { username, online: true, lastSeen: Date.now() };
-        presenceRef.set(data).catch(()=>{});
-        presenceRef.onDisconnect().remove().catch(()=>{});
-        presenceHeartbeat(uid, username);
-      } catch (e) {
-        console.warn('presence start error', e);
-      }
+      db.ref(`${PRESENCE_ROOT}/${u.uid}`).update({ username: name }).catch(()=>{});
+      updateAdminUI();
     }
+
+    function isAdminLocal() {
+      const u = currentUser();
+      return (u && u.username === 'Kyson');
+    }
+
+    // show small banner
+    function showBanner(text, ms = 2500) {
+      banner.textContent = text;
+      banner.style.display = 'block';
+      setTimeout(()=> banner.style.display = 'none', ms);
+    }
+
+    // presence
+    let presenceRef = null;
     let heartbeatTimer = null;
-    function presenceHeartbeat(uid, username) {
+    function startPresence(uid, username) {
+      presenceRef = db.ref(`${PRESENCE_ROOT}/${uid}`);
+      presenceRef.set({ username, online: true, lastSeen: Date.now() }).catch(()=>{});
+      presenceRef.onDisconnect().remove().catch(()=>{});
       if (heartbeatTimer) clearInterval(heartbeatTimer);
-      heartbeatTimer = setInterval(() => {
+      heartbeatTimer = setInterval(()=> {
         db.ref(`${PRESENCE_ROOT}/${uid}`).update({ lastSeen: Date.now(), online: true, username }).catch(()=>{});
       }, 25000);
     }
     function stopPresence(uid) {
       if (heartbeatTimer) clearInterval(heartbeatTimer);
-      if (presenceRef) {
-        presenceRef.remove().catch(()=>{});
-        presenceRef = null;
-      }
+      if (presenceRef) { presenceRef.remove().catch(()=>{}); presenceRef = null; }
     }
 
-    // Messages: listen and render
+    // messages
     let messagesRef = null;
-    function startListeningMessages() {
+    function startMessages() {
       if (messagesRef) return;
       messagesRef = db.ref(MESSAGES_REF);
       messagesRef.limitToLast(200).on('child_added', snap => {
         appendChatMessage(snap.val());
-      }, err => {
-        appendSystemMessage('Realtime listen error: ' + (err && err.message ? err.message : err));
-      });
+      }, err => appendSystemMessage('Listen error: ' + (err && err.message ? err.message : err)));
     }
-    function stopListeningMessages() {
-      if (!messagesRef) return;
-      messagesRef.off();
-      messagesRef = null;
-      chatEl.innerHTML = '';
-    }
-
     function appendSystemMessage(text) {
       const el = document.createElement('div');
       el.className = 'msg';
@@ -313,7 +258,20 @@
       el.className = 'msg';
       const meta = document.createElement('div');
       meta.className = 'meta';
-      meta.textContent = (data.name || 'Guest') + ' • ' + new Date(data.ts || Date.now()).toLocaleTimeString();
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = data.name || 'Guest';
+      meta.appendChild(nameSpan);
+      if ((data.name || '') === 'Kyson') {
+        const badge = document.createElement('span');
+        badge.className = 'admin-badge';
+        badge.textContent = 'ADMIN';
+        meta.appendChild(badge);
+      }
+      const timeSpan = document.createElement('span');
+      timeSpan.style.marginLeft = '8px';
+      timeSpan.style.color = 'var(--muted)';
+      timeSpan.textContent = '• ' + new Date(data.ts || Date.now()).toLocaleTimeString();
+      meta.appendChild(timeSpan);
       const body = document.createElement('div');
       body.textContent = data.text || '';
       el.appendChild(meta);
@@ -322,25 +280,26 @@
       chatEl.scrollTop = chatEl.scrollHeight;
     }
 
-    // Send message
-    sendBtn.addEventListener('click', async () => {
+    // send message
+    sendBtn.addEventListener('click', sendMessage);
+    msgInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+
+    function sendMessage() {
+      if (isKickedThisSession()) { showBanner('You are kicked this session'); return; }
+      if (isBannedLocal()) { showBanner('You are banned'); return; }
       const raw = msgInput.value || '';
       const text = raw.replace(/\r?\n|\r/g,' ').trim().slice(0,300);
       if (!text) return;
-      const user = JSON.parse(localStorage.getItem('chat_user') || 'null');
-      if (!user) { alert('No user'); return; }
-      const name = user.username || 'Guest';
-      try {
-        await db.ref(MESSAGES_REF).push({ name, text, ts: Date.now(), uid: user.uid || null });
+      const u = currentUser();
+      db.ref(MESSAGES_REF).push({ name: u.username, text, ts: Date.now(), uid: u.uid }).then(()=> {
         msgInput.value = '';
-      } catch (err) {
+      }).catch(err => {
         console.error('push error', err);
         appendSystemMessage('Send failed: ' + (err && err.message ? err.message : err));
-      }
-    });
-    msgInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendBtn.click(); });
+      });
+    }
 
-    // Members list: listen to presence
+    // members list
     let presenceListener = null;
     function startMembersListener() {
       const ref = db.ref(PRESENCE_ROOT);
@@ -348,31 +307,21 @@
       ref.on('value', snap => {
         const val = snap.val() || {};
         renderMembers(val);
-      }, err => {
-        console.error('presence listen error', err);
-      });
+      }, err => console.error('presence listen error', err));
     }
-    function stopMembersListener() {
-      if (presenceListener) {
-        presenceListener.off();
-        presenceListener = null;
-      }
-      clearMembers();
-    }
-
     function renderMembers(obj) {
       membersListEl.innerHTML = '';
       const entries = Object.entries(obj || {});
-      // sort: online first by lastSeen desc
       entries.sort((a,b) => {
-        const A = a[1] || {}, B = b[1] || {};
+        const A = a[1]||{}, B = b[1]||{};
         const aOnline = A.online ? 1 : 0, bOnline = B.online ? 1 : 0;
         if (aOnline !== bOnline) return bOnline - aOnline;
-        return (B.lastSeen || 0) - (A.lastSeen || 0);
+        return (B.lastSeen||0) - (A.lastSeen||0);
       });
       entries.forEach(([uid, info]) => {
         const member = document.createElement('div');
         member.className = 'member';
+        member.dataset.uid = uid;
         const avatar = document.createElement('div');
         avatar.className = 'avatar';
         avatar.textContent = (info.username || 'U').slice(0,2).toUpperCase();
@@ -381,6 +330,13 @@
         const name = document.createElement('div');
         name.className = 'name';
         name.textContent = info.username || uid;
+        if ((info.username || '') === 'Kyson') {
+          const adminTag = document.createElement('span');
+          adminTag.className = 'admin-badge';
+          adminTag.textContent = 'ADMIN';
+          adminTag.style.marginLeft = '8px';
+          name.appendChild(adminTag);
+        }
         const status = document.createElement('div');
         status.className = 'status';
         status.textContent = info.online ? 'online' : 'last seen ' + timeAgo(info.lastSeen || Date.now());
@@ -388,14 +344,13 @@
         infoWrap.appendChild(status);
         member.appendChild(avatar);
         member.appendChild(infoWrap);
+
+        // click to open member modal
+        member.addEventListener('click', () => openMemberModal(uid, info));
+
         membersListEl.appendChild(member);
       });
       onlineCountEl.textContent = entries.length + ' online';
-    }
-
-    function clearMembers() {
-      membersListEl.innerHTML = '';
-      onlineCountEl.textContent = '0 online';
     }
 
     function timeAgo(ts) {
@@ -408,45 +363,224 @@
       return h + 'h';
     }
 
-    // Initialize: start message listener, presence, members
-    (function init() {
-      const user = currentUser();
-      // ensure displayNameInput shows current name
-      displayNameInput.value = user.username || '';
-      // start presence and listeners
-      startListeningMessages();
-      startMembersListener();
-      startPresence(user.uid, user.username);
-      appendSystemMessage('You are signed in as ' + user.username);
-    })();
-
-    // Remove presence on unload
-    window.addEventListener('beforeunload', () => {
-      const user = JSON.parse(localStorage.getItem('chat_user') || 'null');
-      if (user && user.uid) {
-        db.ref(`${PRESENCE_ROOT}/${user.uid}`).remove();
-      }
-    });
-
-    // Optional sign out button (clears local identity and creates a new guest)
-    signOutBtn.addEventListener('click', () => {
-      const old = JSON.parse(localStorage.getItem('chat_user') || 'null');
-      if (old && old.uid) db.ref(`${PRESENCE_ROOT}/${old.uid}`).remove().catch(()=>{});
-      localStorage.removeItem('chat_user');
-      // create new guest and reload to apply
-      currentUser();
-      location.reload();
-    });
-
-    // Show signOutBtn only if user is not a guest id starting with guest_
-    (function toggleSignOutVisibility() {
-      const u = JSON.parse(localStorage.getItem('chat_user') || 'null');
-      if (u && u.uid && !String(u.uid).startsWith('guest_')) {
-        signOutBtn.style.display = 'inline-block';
+    // member modal actions
+    let modalTargetUid = null;
+    function openMemberModal(uid, info) {
+      modalTargetUid = uid;
+      modalName.textContent = info.username || uid;
+      modalUid.textContent = uid;
+      modalStatus.textContent = info.online ? 'online' : 'offline';
+      // show/hide admin actions based on local admin
+      if (isAdminLocal()) {
+        kickBtn.style.display = 'inline-block';
+        banBtn.style.display = 'inline-block';
       } else {
-        signOutBtn.style.display = 'none';
+        kickBtn.style.display = 'none';
+        banBtn.style.display = 'none';
       }
+      memberModal.style.display = 'flex';
+    }
+    closeModal.addEventListener('click', ()=> memberModal.style.display = 'none');
+
+    // Kick: write to /kicks/{uid} with timestamp
+    kickBtn.addEventListener('click', async () => {
+      if (!modalTargetUid) return;
+      try {
+        await db.ref(`${KICKS_ROOT}/${modalTargetUid}`).set({ ts: Date.now(), by: currentUser().uid });
+        showBanner('Kick sent');
+      } catch (err) {
+        console.error('kick error', err);
+        showBanner('Kick failed');
+      }
+      memberModal.style.display = 'none';
+    });
+
+    // Ban: write to /bans/{uid} with timestamp
+    banBtn.addEventListener('click', async () => {
+      if (!modalTargetUid) return;
+      try {
+        await db.ref(`${BANS_ROOT}/${modalTargetUid}`).set({ ts: Date.now(), by: currentUser().uid });
+        showBanner('Ban applied');
+      } catch (err) {
+        console.error('ban error', err);
+        showBanner('Ban failed');
+      }
+      memberModal.style.display = 'none';
+    });
+
+    // Listen for kicks and bans
+    function startKickListener() {
+      db.ref(KICKS_ROOT).on('child_added', snap => {
+        const targetUid = snap.key;
+        const data = snap.val();
+        const me = currentUser();
+        if (me && me.uid === targetUid) {
+          // show kicked overlay for this session
+          showKicked();
+        }
+        // remove the kick entry after a short time so it's session-only
+        setTimeout(()=> db.ref(`${KICKS_ROOT}/${targetUid}`).remove().catch(()=>{}), 15000);
+      });
+    }
+
+    function startBanListener() {
+      const ref = db.ref(BANS_ROOT);
+      ref.on('child_added', snap => {
+        const targetUid = snap.key;
+        const me = currentUser();
+        if (me && me.uid === targetUid) {
+          // set local banned flag and show banned screen
+          localStorage.setItem(`banned_${me.uid}`, '1');
+          showBanned();
+        }
+        // update Banland UI
+        refreshBanland();
+      });
+      ref.on('child_removed', snap => {
+        const targetUid = snap.key;
+        const me = currentUser();
+        if (me && me.uid === targetUid) {
+          // clear local banned flag
+          localStorage.removeItem(`banned_${me.uid}`);
+          hideBanned();
+        }
+        refreshBanland();
+      });
+    }
+
+    // Kicked UI
+    function showKicked() {
+      kickedScreen.style.display = 'flex';
+    }
+    function hideKicked() {
+      kickedScreen.style.display = 'none';
+    }
+    function isKickedThisSession() {
+      return kickedScreen.style.display === 'flex';
+    }
+
+    // Banned UI
+    function showBanned() {
+      bannedScreen.style.display = 'flex';
+    }
+    function hideBanned() {
+      bannedScreen.style.display = 'none';
+    }
+    function isBannedLocal() {
+      const me = currentUser();
+      return !!localStorage.getItem(`banned_${me.uid}`);
+    }
+
+    // Banland
+    banlandBtn.addEventListener('click', openBanland);
+    closeBanland.addEventListener('click', ()=> banlandModal.style.display = 'none');
+
+    function openBanland() {
+      if (!isAdminLocal()) { showBanner('Admin only'); return; }
+      refreshBanland();
+      banlandModal.style.display = 'flex';
+    }
+
+    async function refreshBanland() {
+      const snap = await db.ref(BANS_ROOT).once('value');
+      const bans = snap.val() || {};
+      banListEl.innerHTML = '';
+      const entries = Object.entries(bans);
+      if (entries.length === 0) {
+        banListEl.textContent = 'No banned users';
+        return;
+      }
+      entries.forEach(([uid, info]) => {
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.justifyContent = 'space-between';
+        row.style.alignItems = 'center';
+        row.style.padding = '8px 0';
+        const left = document.createElement('div');
+        left.textContent = (info.username || uid) + ' • ' + uid;
+        const btn = document.createElement('button');
+        btn.textContent = 'Unban';
+        btn.className = 'btn';
+        btn.style.background = '#10b981';
+        btn.style.color = '#fff';
+        btn.addEventListener('click', () => {
+          db.ref(`${BANS_ROOT}/${uid}`).remove().then(()=> showBanner('Unbanned')).catch(()=> showBanner('Unban failed'));
+        });
+        row.appendChild(left);
+        row.appendChild(btn);
+        banListEl.appendChild(row);
+      });
+    }
+
+    // Admin UI toggle
+    function updateAdminUI() {
+      if (isAdminLocal()) {
+        banlandBtn.style.display = 'inline-block';
+      } else {
+        banlandBtn.style.display = 'none';
+      }
+    }
+
+    // On load: resume or create user, start listeners
+    (function init() {
+      const u = currentUser();
+      displayNameInput.value = u.username || '';
+      updateAdminUI();
+      startPresence(u.uid, u.username);
+      startMessages();
+      startMembersListener();
+      startKickListener();
+      startBanListener();
+      // if local banned flag exists, show banned
+      if (isBannedLocal()) showBanned();
+      // show small welcome
+      appendSystemMessage('You are signed in as ' + u.username + (isAdminLocal() ? ' (admin)' : ''));
     })();
+
+    // displayName change
+    displayNameInput.addEventListener('change', () => {
+      const name = (displayNameInput.value || '').trim() || currentUser().username;
+      setUserName(name);
+    });
+
+    // remove presence on unload
+    window.addEventListener('beforeunload', () => {
+      const u = currentUser();
+      if (u && u.uid) db.ref(`${PRESENCE_ROOT}/${u.uid}`).remove().catch(()=>{});
+    });
+
+    // Alt+X opens Banland
+    window.addEventListener('keydown', (e) => {
+      if (e.altKey && (e.key === 'x' || e.key === 'X')) {
+        openBanland();
+      }
+    });
+
+    // Clicking outside modals closes them
+    memberModal.addEventListener('click', (ev) => { if (ev.target === memberModal) memberModal.style.display = 'none'; });
+    banlandModal.addEventListener('click', (ev) => { if (ev.target === banlandModal) banlandModal.style.display = 'none'; });
+
+    // Helper: create or return current user in localStorage
+    function currentUser() {
+      const stored = localStorage.getItem('chat_user');
+      if (stored) return JSON.parse(stored);
+      const guestName = 'Guest-' + Math.random().toString(36).slice(2,8);
+      const uid = 'guest_' + Date.now().toString(36);
+      const user = { username: guestName, uid };
+      localStorage.setItem('chat_user', JSON.stringify(user));
+      return user;
+    }
+
+    // Optional: clicking a member who is yourself opens nothing; prevent actions on self
+    // (Handled by modal actions: admin can still kick/ban themselves if they want.)
+
+    // Expose a small console helper for testing:
+    window.__chatHelpers = {
+      currentUser,
+      isAdminLocal,
+      isBannedLocal,
+      showBanner
+    };
   </script>
 </body>
 </html>
