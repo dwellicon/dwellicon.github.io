@@ -1,9 +1,9 @@
 <!doctype html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>Live Chat (with uploads)</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="utf-8" />
+  <title>Chat with Members List</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     :root{
       --bg:#f2f6fb;
@@ -12,84 +12,195 @@
       --accent:#4f46e5;
       --you:#e9f0ff;
       --other:#ffffff;
-      --shadow: 0 6px 20px rgba(20,30,60,0.08);
-      --radius:12px;
-      --max-width:760px;
+      --shadow: 0 8px 30px rgba(20,30,60,0.06);
     }
-    html,body{height:100%;margin:0;background:linear-gradient(180deg,#eef6ff 0%,var(--bg) 100%);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;color:#0f1724}
-    .wrap{max-width:var(--max-width);margin:28px auto;padding:18px;box-sizing:border-box}
-    .card{background:var(--card);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;height:78vh;min-height:520px}
-    header{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid #eef2f7}
-    .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#06b6d4);display:flex;align-items:center;justify-content:center;color:white;font-weight:700}
+    html,body{
+      height:100%;
+      margin:0;
+      background:linear-gradient(180deg,#eef6ff 0%,var(--bg) 100%);
+      font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;
+      color:#0f1724;
+    }
+
+    /* Layout: left chat, right members */
+    .layout {
+      display:flex;
+      height:100vh;
+      gap:0;
+      align-items:stretch;
+    }
+
+    /* Chat column (left) */
+    .chat-column {
+      flex: 1 1 0;
+      display:flex;
+      flex-direction:column;
+      background:var(--card);
+      border-right:1px solid #e6edf6;
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    header {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:14px 18px;
+      border-bottom:1px solid #eef2f7;
+      background:linear-gradient(90deg, rgba(79,70,229,0.02), transparent);
+    }
+    .logo {
+      width:44px;height:44px;border-radius:10px;
+      background:linear-gradient(135deg,var(--accent),#06b6d4);
+      display:flex;align-items:center;justify-content:center;color:white;font-weight:700;
+    }
     header h1{font-size:16px;margin:0}
     header p{margin:0;color:var(--muted);font-size:13px}
-    #chat{flex:1;padding:18px;overflow:auto;display:flex;flex-direction:column;gap:10px;background:linear-gradient(180deg,rgba(79,70,229,0.02),transparent)}
-    .msg-row{display:flex;gap:10px;align-items:flex-end;max-width:85%}
-    .msg-row.you{margin-left:auto;flex-direction:row-reverse}
-    .avatar{width:36px;height:36px;border-radius:10px;background:#c7d2fe;color:#1e293b;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0}
-    .bubble{padding:10px 12px;border-radius:12px;background:var(--other);box-shadow:0 1px 0 rgba(15,23,36,0.03);position:relative;word-break:break-word}
-    .msg-row.you .bubble{background:var(--you)}
-    .meta{display:flex;gap:8px;align-items:center;margin-top:6px;font-size:12px;color:var(--muted)}
-    .time{font-size:11px;color:var(--muted)}
-    .input-bar{display:flex;gap:10px;padding:12px;border-top:1px solid #eef2f7;background:linear-gradient(180deg,transparent,rgba(255,255,255,0.6));align-items:center}
-    .input{flex:1;display:flex;gap:8px;align-items:center;background:#f8fafc;padding:8px;border-radius:10px;border:1px solid #eef2f7}
-    .input input{flex:1;border:0;background:transparent;padding:8px;font-size:14px;outline:none}
-    .send{background:var(--accent);color:white;border:0;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600;box-shadow:0 6px 18px rgba(79,70,229,0.12)}
-    .send:active{transform:translateY(1px)}
-    .attach{background:#10b981;color:white;border:0;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:600;box-shadow:0 6px 18px rgba(16,185,129,0.12)}
-    .name{width:120px;padding:8px;border-radius:8px;border:1px solid #eef2f7;background:white}
-    .muted-note{font-size:12px;color:var(--muted);padding:8px 18px}
-    .progress { font-size:12px;color:var(--muted);padding:6px 10px;border-radius:8px;background:#fff;display:inline-block;margin-top:6px;box-shadow:0 1px 0 rgba(0,0,0,0.03) }
-    img.msg-image{max-width:320px;border-radius:8px;display:block}
-    .error-box{background:#fff6f6;border:1px solid #ffd6d6;color:#7b1d1d;padding:10px;border-radius:8px;margin:12px 18px;display:none}
-    .help-box{background:#fffef6;border:1px solid #fff1b8;color:#6b4b00;padding:10px;border-radius:8px;margin:12px 18px;display:none;white-space:pre-wrap;font-family:monospace;font-size:13px}
-    @media (max-width:640px){
-      .name{display:none}
-      .card{height:86vh}
-      .logo{width:36px;height:36px}
-      img.msg-image{max-width:220px}
+
+    /* small name input in header */
+    .header-right { margin-left:auto; display:flex; gap:10px; align-items:center; }
+    .name-input { padding:8px 10px; border-radius:8px; border:1px solid #eef2f7; width:160px; }
+
+    /* Chat area */
+    #chat {
+      flex:1;
+      padding:18px;
+      overflow:auto;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      background:linear-gradient(180deg,rgba(79,70,229,0.02),transparent);
+    }
+    .msg {
+      padding:10px;
+      background:#fff;
+      border-radius:10px;
+      box-shadow:0 1px 0 rgba(0,0,0,0.03);
+      max-width:70%;
+      word-break:break-word;
+    }
+    .msg .meta { font-size:12px;color:var(--muted);margin-bottom:6px; }
+
+    /* Input bar */
+    .input-bar {
+      display:flex;
+      gap:10px;
+      padding:12px;
+      border-top:1px solid #eef2f7;
+      background:#f8fafc;
+      align-items:center;
+    }
+    .input-bar .input {
+      flex:1;
+      display:flex;
+      gap:8px;
+      align-items:center;
+      background:#fff;
+      padding:8px;
+      border-radius:10px;
+      border:1px solid #eef2f7;
+    }
+    .input-bar input[type="text"]{
+      flex:1;border:0;background:transparent;padding:8px;font-size:14px;outline:none;
+    }
+    .btn {
+      padding:10px 14px;border-radius:10px;border:0;cursor:pointer;font-weight:600;
+    }
+    .btn.send { background:var(--accent); color:#fff; box-shadow:0 6px 18px rgba(79,70,229,0.12); }
+    .btn.attach { background:#10b981; color:#fff; }
+
+    /* Right column: members */
+    .members-column {
+      width:300px;
+      min-width:220px;
+      max-width:360px;
+      background:#fbfdff;
+      border-left:1px solid #e6edf6;
+      display:flex;
+      flex-direction:column;
+      gap:0;
+    }
+    .members-header {
+      padding:14px 16px;
+      border-bottom:1px solid #eef2f7;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+    }
+    .members-header h3 { margin:0;font-size:14px; }
+    .members-list {
+      padding:12px;
+      overflow:auto;
+      flex:1;
+    }
+    .member {
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding:8px;
+      border-radius:8px;
+      transition:background .12s;
+    }
+    .member:hover { background:rgba(15,23,36,0.03); }
+    .member .avatar {
+      width:40px;height:40px;border-radius:8px;background:#c7d2fe;color:#0f1724;display:flex;align-items:center;justify-content:center;font-weight:700;
+    }
+    .member .info { display:flex;flex-direction:column; }
+    .member .name { font-weight:600; font-size:14px; }
+    .member .status { font-size:12px;color:var(--muted); }
+
+    @media (max-width:900px){
+      .members-column{display:none}
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="card" role="application" aria-label="Chat">
+  <div class="layout">
+    <!-- Chat column -->
+    <div class="chat-column">
       <header>
         <div class="logo">C</div>
         <div>
-          <h1>Live Chat</h1>
+          <h1>Private Chat</h1>
           <p>Real-time messages powered by Firebase</p>
+        </div>
+
+        <div class="header-right">
+          <input id="displayNameInput" class="name-input" type="text" placeholder="Your name">
+          <button id="signOutBtn" class="btn" style="background:#ef4444;color:#fff;display:none">Sign out</button>
         </div>
       </header>
 
       <div id="chat" aria-live="polite"></div>
 
-      <div class="muted-note">Tip: press Enter to send. Your name is saved locally. Attach images or files with the paperclip.</div>
-
-      <div id="error" class="error-box" role="alert"></div>
-      <div id="help" class="help-box" aria-hidden="true"></div>
-
       <div class="input-bar">
-        <input id="name" class="name" type="text" placeholder="Your name" value="Guest" aria-label="Your name">
         <div class="input" role="group" aria-label="Message input">
           <input id="msg" type="text" placeholder="Write a message…" aria-label="Message">
         </div>
-        <button id="attach" class="attach" aria-label="Attach file">Attach</button>
-        <button id="send" class="send" aria-label="Send message">Send</button>
-        <!-- hidden file input -->
-        <input id="file" type="file" accept="image/*,video/*,application/pdf" style="display:none">
+        <button id="attach" class="btn attach" aria-label="Attach file">Attach</button>
+        <button id="send" class="btn send" aria-label="Send message">Send</button>
       </div>
     </div>
+
+    <!-- Members column -->
+    <aside class="members-column" aria-label="Members">
+      <div class="members-header">
+        <h3>Members</h3>
+        <div id="onlineCount" class="small">0 online</div>
+      </div>
+      <div class="members-list" id="membersList">
+        <!-- live members will be appended here -->
+      </div>
+    </aside>
   </div>
 
-  <!-- Firebase compat SDKs -->
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
   <script>
-    /* ====== CONFIG: paste your firebaseConfig here ====== */
+    // ====== CONFIG: paste your firebaseConfig here ======
     const firebaseConfig = {
       apiKey: "AIzaSyAulcwmA2r2Z0Wv5mxyuWwQvPv05E8HvMU",
       authDomain: "dwellicon-42e72.firebaseapp.com",
@@ -100,302 +211,242 @@
       appId: "1:634657717896:web:27f246614fdb2c2398a93d",
       measurementId: "G-GP1YBL86RB"
     };
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-    // Services
-    const db = firebase.database().ref('messages');
-    const storageRoot = firebase.storage().ref();
-    const auth = firebase.auth();
-
-    // Elements
-    const chat = document.getElementById('chat');
-    const nameInput = document.getElementById('name');
+    // UI elements
+    const chatEl = document.getElementById('chat');
     const msgInput = document.getElementById('msg');
     const sendBtn = document.getElementById('send');
     const attachBtn = document.getElementById('attach');
-    const fileInput = document.getElementById('file');
-    const errorBox = document.getElementById('error');
-    const helpBox = document.getElementById('help');
+    const displayNameInput = document.getElementById('displayNameInput');
+    const signOutBtn = document.getElementById('signOutBtn');
 
-    // Persist name
-    const savedName = localStorage.getItem('chat_name');
-    if (savedName) nameInput.value = savedName;
-    nameInput.addEventListener('change', () => localStorage.setItem('chat_name', nameInput.value.trim()));
+    const membersListEl = document.getElementById('membersList');
+    const onlineCountEl = document.getElementById('onlineCount');
 
-    // Anonymous auth (so uploads can be restricted to authenticated users)
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        console.log('signed in anonymously', user.uid);
-      } else {
-        auth.signInAnonymously().catch(err => {
-          console.error('auth error', err);
-          showError('Authentication failed. Uploads may not work.');
-        });
-      }
+    // Presence root path
+    const PRESENCE_ROOT = 'presence';
+
+    // Messages ref
+    const MESSAGES_REF = 'messages';
+
+    // Local session: if user hasn't set a name, create a guest name
+    function currentUser() {
+      const stored = localStorage.getItem('chat_user');
+      if (stored) return JSON.parse(stored);
+      // create a guest identity
+      const guestName = 'Guest-' + Math.random().toString(36).slice(2,8);
+      const uid = 'guest_' + Date.now().toString(36);
+      const user = { username: guestName, uid };
+      localStorage.setItem('chat_user', JSON.stringify(user));
+      return user;
+    }
+
+    // Allow user to change display name in header
+    const user = currentUser();
+    displayNameInput.value = user.username || '';
+    displayNameInput.addEventListener('change', () => {
+      const newName = (displayNameInput.value || '').trim() || user.username;
+      const updated = { ...user, username: newName };
+      localStorage.setItem('chat_user', JSON.stringify(updated));
+      // update presence record if exists
+      db.ref(`${PRESENCE_ROOT}/${updated.uid}`).update({ username: newName }).catch(()=>{});
     });
 
-    // Helpers
-    function initials(name){
-      return (name || 'G').split(' ').map(s=>s[0]).slice(0,2).join('').toUpperCase();
-    }
-    function timeFmt(ts){
-      const d = new Date(ts);
-      return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-    }
-    function showError(msg){
-      errorBox.style.display = 'block';
-      errorBox.textContent = msg;
-    }
-    function hideError(){
-      errorBox.style.display = 'none';
-      errorBox.textContent = '';
-    }
-    function showHelp(text){
-      helpBox.style.display = 'block';
-      helpBox.setAttribute('aria-hidden','false');
-      helpBox.textContent = text;
-    }
-    function hideHelp(){
-      helpBox.style.display = 'none';
-      helpBox.setAttribute('aria-hidden','true');
-      helpBox.textContent = '';
-    }
-
-    // Auto-scroll only if user is near bottom
-    function isAtBottom(el, threshold = 80){
-      return (el.scrollHeight - el.scrollTop - el.clientHeight) < threshold;
-    }
-
-    // Render message (supports text and image/file)
-    function renderMessage(data, key){
-      const me = (data.name || 'Guest') === (nameInput.value || 'Guest');
-      const row = document.createElement('div');
-      row.className = 'msg-row' + (me ? ' you' : '');
-      const avatar = document.createElement('div');
-      avatar.className = 'avatar';
-      avatar.textContent = initials(data.name);
-      const bubbleWrap = document.createElement('div');
-      bubbleWrap.style.display = 'flex';
-      bubbleWrap.style.flexDirection = 'column';
-      const bubble = document.createElement('div');
-      bubble.className = 'bubble';
-
-      // If message contains an image/file URL
-      if (data.imageUrl) {
-        const fileName = data.fileName || '';
-        const lower = (fileName.split('.').pop() || '').toLowerCase();
-        if (lower === 'pdf') {
-          const link = document.createElement('a');
-          link.href = data.imageUrl;
-          link.textContent = fileName || 'PDF';
-          link.target = '_blank';
-          bubble.appendChild(link);
-        } else if (/(mp4|webm|ogg)$/i.test(lower) || /video\//.test(data.contentType || '')) {
-          const vid = document.createElement('video');
-          vid.src = data.imageUrl;
-          vid.controls = true;
-          vid.style.maxWidth = '320px';
-          bubble.appendChild(vid);
-        } else {
-          const img = document.createElement('img');
-          img.className = 'msg-image';
-          img.src = data.imageUrl;
-          img.alt = fileName || 'image';
-          img.addEventListener('click', () => window.open(data.imageUrl, '_blank'));
-          bubble.appendChild(img);
-        }
-        if (data.text) {
-          const caption = document.createElement('div');
-          caption.style.marginTop = '8px';
-          caption.textContent = data.text;
-          bubble.appendChild(caption);
-        }
-      } else {
-        bubble.textContent = data.text;
+    // Presence: write presence record and set onDisconnect removal
+    let presenceRef = null;
+    function startPresence(uid, username) {
+      try {
+        presenceRef = db.ref(`${PRESENCE_ROOT}/${uid}`);
+        const data = { username, online: true, lastSeen: Date.now() };
+        presenceRef.set(data).catch(()=>{});
+        presenceRef.onDisconnect().remove().catch(()=>{});
+        presenceHeartbeat(uid, username);
+      } catch (e) {
+        console.warn('presence start error', e);
       }
+    }
+    let heartbeatTimer = null;
+    function presenceHeartbeat(uid, username) {
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+      heartbeatTimer = setInterval(() => {
+        db.ref(`${PRESENCE_ROOT}/${uid}`).update({ lastSeen: Date.now(), online: true, username }).catch(()=>{});
+      }, 25000);
+    }
+    function stopPresence(uid) {
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+      if (presenceRef) {
+        presenceRef.remove().catch(()=>{});
+        presenceRef = null;
+      }
+    }
 
+    // Messages: listen and render
+    let messagesRef = null;
+    function startListeningMessages() {
+      if (messagesRef) return;
+      messagesRef = db.ref(MESSAGES_REF);
+      messagesRef.limitToLast(200).on('child_added', snap => {
+        appendChatMessage(snap.val());
+      }, err => {
+        appendSystemMessage('Realtime listen error: ' + (err && err.message ? err.message : err));
+      });
+    }
+    function stopListeningMessages() {
+      if (!messagesRef) return;
+      messagesRef.off();
+      messagesRef = null;
+      chatEl.innerHTML = '';
+    }
+
+    function appendSystemMessage(text) {
+      const el = document.createElement('div');
+      el.className = 'msg';
+      el.style.opacity = '0.9';
+      el.textContent = text;
+      chatEl.appendChild(el);
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
+    function appendChatMessage(data) {
+      const el = document.createElement('div');
+      el.className = 'msg';
       const meta = document.createElement('div');
       meta.className = 'meta';
-      const nameEl = document.createElement('div');
-      nameEl.style.fontSize='12px';
-      nameEl.style.color='var(--muted)';
-      nameEl.textContent = data.name || 'Guest';
-      const timeEl = document.createElement('div');
-      timeEl.className = 'time';
-      timeEl.textContent = timeFmt(data.ts || Date.now());
-      meta.appendChild(nameEl);
-      meta.appendChild(timeEl);
-
-      bubbleWrap.appendChild(bubble);
-      bubbleWrap.appendChild(meta);
-      row.appendChild(avatar);
-      row.appendChild(bubbleWrap);
-
-      const atBottom = isAtBottom(chat);
-      chat.appendChild(row);
-      if (atBottom) chat.scrollTop = chat.scrollHeight;
+      meta.textContent = (data.name || 'Guest') + ' • ' + new Date(data.ts || Date.now()).toLocaleTimeString();
+      const body = document.createElement('div');
+      body.textContent = data.text || '';
+      el.appendChild(meta);
+      el.appendChild(body);
+      chatEl.appendChild(el);
+      chatEl.scrollTop = chatEl.scrollHeight;
     }
 
-    // Listen for messages
-    db.limitToLast(200).on('child_added', snap => {
-      const data = snap.val();
-      renderMessage(data, snap.key);
-    }, err => {
-      console.error('listen error', err);
-      showError('Realtime DB listen error: ' + (err && err.message ? err.message : String(err)));
-    });
-
-    // Send text message
-    function sendText(){
-      hideError();
-      hideHelp();
+    // Send message
+    sendBtn.addEventListener('click', async () => {
       const raw = msgInput.value || '';
       const text = raw.replace(/\r?\n|\r/g,' ').trim().slice(0,300);
-      const name = (nameInput.value || 'Guest').trim().slice(0,50) || 'Guest';
       if (!text) return;
-      db.push({ name, text, ts: Date.now() })
-        .then(()=> msgInput.value = '')
-        .catch(e => {
-          console.error('send error', e);
-          showError('Send failed: ' + (e && e.message ? e.message : String(e)));
-        });
+      const user = JSON.parse(localStorage.getItem('chat_user') || 'null');
+      if (!user) { alert('No user'); return; }
+      const name = user.username || 'Guest';
+      try {
+        await db.ref(MESSAGES_REF).push({ name, text, ts: Date.now(), uid: user.uid || null });
+        msgInput.value = '';
+      } catch (err) {
+        console.error('push error', err);
+        appendSystemMessage('Send failed: ' + (err && err.message ? err.message : err));
+      }
+    });
+    msgInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendBtn.click(); });
+
+    // Members list: listen to presence
+    let presenceListener = null;
+    function startMembersListener() {
+      const ref = db.ref(PRESENCE_ROOT);
+      presenceListener = ref;
+      ref.on('value', snap => {
+        const val = snap.val() || {};
+        renderMembers(val);
+      }, err => {
+        console.error('presence listen error', err);
+      });
+    }
+    function stopMembersListener() {
+      if (presenceListener) {
+        presenceListener.off();
+        presenceListener = null;
+      }
+      clearMembers();
     }
 
-    sendBtn.addEventListener('click', sendText);
-    msgInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendText(); });
-
-    // Attach flow
-    attachBtn.addEventListener('click', () => fileInput.click());
-
-    fileInput.addEventListener('change', async (e) => {
-      hideError();
-      hideHelp();
-      const file = e.target.files[0];
-      if (!file) return;
-
-      // Validation
-      const maxBytes = 5 * 1024 * 1024; // 5 MB
-      const allowedPrefixes = ['image/', 'video/', 'application/pdf'];
-      if (!allowedPrefixes.some(p => file.type.startsWith(p))) {
-        showError('Unsupported file type. Allowed: images, videos, PDFs.');
-        fileInput.value = '';
-        return;
-      }
-      if (file.size > maxBytes) {
-        showError('File too large (max 5 MB).');
-        fileInput.value = '';
-        return;
-      }
-
-      // Optional resize for images
-      let uploadBlob = file;
-      if (file.type.startsWith('image/')) {
-        try {
-          uploadBlob = await resizeImage(file, 1200);
-        } catch (err) {
-          console.warn('resize failed, uploading original', err);
-          uploadBlob = file;
-        }
-      }
-
-      // Create unique path
-      const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-      const path = `uploads/${firebaseConfig.projectId}/${Date.now()}_${safeName}`;
-      const fileRef = storageRoot.child(path);
-
-      // Show progress element
-      const progressEl = document.createElement('div');
-      progressEl.className = 'progress';
-      progressEl.textContent = `Uploading ${file.name} — 0%`;
-      chat.appendChild(progressEl);
-      chat.scrollTop = chat.scrollHeight;
-
-      // Upload with error handling for CORS and permission issues
-      const uploadTask = fileRef.put(uploadBlob, { contentType: file.type });
-      uploadTask.on('state_changed', snapshot => {
-        const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-        progressEl.textContent = `Uploading ${file.name} — ${pct}%`;
-      }, err => {
-        console.error('upload error', err);
-        progressEl.textContent = 'Upload failed';
-        setTimeout(() => progressEl.remove(), 3000);
-
-        // Detect CORS preflight failure (common when bucket CORS not configured)
-        if (err && err.code && (err.code === 'storage/unauthorized' || err.code === 'storage/unknown')) {
-          showError('Upload blocked by CORS or permission error. See instructions below to fix bucket CORS.');
-          showCorsInstructions();
-        } else {
-          showError('Upload failed: ' + (err && err.message ? err.message : String(err)));
-        }
-      }, async () => {
-        try {
-          const url = await fileRef.getDownloadURL();
-          progressEl.remove();
-          const name = (nameInput.value || 'Guest').trim().slice(0,50) || 'Guest';
-          db.push({
-            name,
-            text: '', // optional caption could be added
-            imageUrl: url,
-            fileName: file.name,
-            contentType: file.type,
-            ts: Date.now()
-          }).catch(e => {
-            console.error('push error', e);
-            showError('Failed to post message: ' + (e && e.message ? e.message : String(e)));
-          });
-        } catch (err) {
-          console.error('getDownloadURL error', err);
-          progressEl.textContent = 'Upload failed';
-          setTimeout(() => progressEl.remove(), 3000);
-          showError('Failed to get file URL after upload. ' + (err && err.message ? err.message : String(err)));
-        }
+    function renderMembers(obj) {
+      membersListEl.innerHTML = '';
+      const entries = Object.entries(obj || {});
+      // sort: online first by lastSeen desc
+      entries.sort((a,b) => {
+        const A = a[1] || {}, B = b[1] || {};
+        const aOnline = A.online ? 1 : 0, bOnline = B.online ? 1 : 0;
+        if (aOnline !== bOnline) return bOnline - aOnline;
+        return (B.lastSeen || 0) - (A.lastSeen || 0);
       });
+      entries.forEach(([uid, info]) => {
+        const member = document.createElement('div');
+        member.className = 'member';
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar';
+        avatar.textContent = (info.username || 'U').slice(0,2).toUpperCase();
+        const infoWrap = document.createElement('div');
+        infoWrap.className = 'info';
+        const name = document.createElement('div');
+        name.className = 'name';
+        name.textContent = info.username || uid;
+        const status = document.createElement('div');
+        status.className = 'status';
+        status.textContent = info.online ? 'online' : 'last seen ' + timeAgo(info.lastSeen || Date.now());
+        infoWrap.appendChild(name);
+        infoWrap.appendChild(status);
+        member.appendChild(avatar);
+        member.appendChild(infoWrap);
+        membersListEl.appendChild(member);
+      });
+      onlineCountEl.textContent = entries.length + ' online';
+    }
 
-      fileInput.value = '';
+    function clearMembers() {
+      membersListEl.innerHTML = '';
+      onlineCountEl.textContent = '0 online';
+    }
+
+    function timeAgo(ts) {
+      const s = Math.floor((Date.now() - ts) / 1000);
+      if (s < 10) return 'just now';
+      if (s < 60) return s + 's';
+      const m = Math.floor(s/60);
+      if (m < 60) return m + 'm';
+      const h = Math.floor(m/60);
+      return h + 'h';
+    }
+
+    // Initialize: start message listener, presence, members
+    (function init() {
+      const user = currentUser();
+      // ensure displayNameInput shows current name
+      displayNameInput.value = user.username || '';
+      // start presence and listeners
+      startListeningMessages();
+      startMembersListener();
+      startPresence(user.uid, user.username);
+      appendSystemMessage('You are signed in as ' + user.username);
+    })();
+
+    // Remove presence on unload
+    window.addEventListener('beforeunload', () => {
+      const user = JSON.parse(localStorage.getItem('chat_user') || 'null');
+      if (user && user.uid) {
+        db.ref(`${PRESENCE_ROOT}/${user.uid}`).remove();
+      }
     });
 
-    // Helper: resize image using canvas, returns a Blob
-    function resizeImage(file, maxWidth = 1200) {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        const reader = new FileReader();
-        reader.onload = e => { img.src = e.target.result; };
-        img.onerror = reject;
-        img.onload = () => {
-          const ratio = img.width / img.height;
-          const width = Math.min(maxWidth, img.width);
-          const height = Math.round(width / ratio);
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-          canvas.toBlob(blob => {
-            if (blob) resolve(blob);
-            else reject(new Error('Canvas toBlob failed'));
-          }, file.type || 'image/jpeg', 0.85);
-        };
-        reader.readAsDataURL(file);
-      });
-    }
+    // Optional sign out button (clears local identity and creates a new guest)
+    signOutBtn.addEventListener('click', () => {
+      const old = JSON.parse(localStorage.getItem('chat_user') || 'null');
+      if (old && old.uid) db.ref(`${PRESENCE_ROOT}/${old.uid}`).remove().catch(()=>{});
+      localStorage.removeItem('chat_user');
+      // create new guest and reload to apply
+      currentUser();
+      location.reload();
+    });
 
-    // Show CORS instructions (visible on upload CORS failure)
-    function showCorsInstructions(){
-      const corsJson = `[
-  {
-    "origin": ["https://dwellicon.github.io", "http://localhost:5500"],
-    "method": ["GET", "POST", "PUT", "HEAD", "OPTIONS"],
-    "maxAgeSeconds": 3600,
-    "responseHeader": ["Content-Type", "x-goog-resumable"]
-  }
-]`;
-      const gsutilCmd = `# Install and authenticate the Google Cloud SDK, then run:\ngsutil cors set cors.json gs://dwellicon-42e72.appspot.com\n\n# Where cors.json contains the JSON above.`;
-      showHelp('CORS or permission error detected.\n\n1) Create a file named cors.json with this content:\n\n' + corsJson + '\n\n2) Run this command from a machine with gsutil authenticated for your Firebase project:\n\n' + gsutilCmd + '\n\nIf you cannot run gsutil, use the Firebase CLI or Cloud Console instructions for configuring Storage CORS. After applying CORS, retry the upload.');
-    }
-
-    // Small UX: focus message input on load
-    window.addEventListener('load', () => msgInput.focus());
+    // Show signOutBtn only if user is not a guest id starting with guest_
+    (function toggleSignOutVisibility() {
+      const u = JSON.parse(localStorage.getItem('chat_user') || 'null');
+      if (u && u.uid && !String(u.uid).startsWith('guest_')) {
+        signOutBtn.style.display = 'inline-block';
+      } else {
+        signOutBtn.style.display = 'none';
+      }
+    })();
   </script>
 </body>
 </html>
