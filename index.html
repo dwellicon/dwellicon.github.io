@@ -368,6 +368,28 @@
       else adminLogoutBtn.style.display = 'none';
     }
 
+    // Helpers to remember which private servers this client has joined
+    function getJoinedServers() {
+      try {
+        const raw = localStorage.getItem('joined_servers');
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    function markJoinedServer(serverId) {
+      const arr = getJoinedServers();
+      if (!arr.includes(serverId)) {
+        arr.push(serverId);
+        localStorage.setItem('joined_servers', JSON.stringify(arr));
+      }
+    }
+    function hasJoinedServer(serverId) {
+      if (isAdminLocal()) return true; // admins always allowed
+      const arr = getJoinedServers();
+      return arr.includes(serverId);
+    }
+
     // presence
     let presenceRef = null;
     let heartbeatTimer = null;
@@ -443,19 +465,54 @@
       });
     }
 
-    // server selection
-    function selectServer(id) {
+    // Select server with private-check and local join memory
+    async function selectServer(id) {
       if (!id) return;
       if (currentServerId === id) return;
+
+      // fetch server info to check privacy
+      let info = null;
+      try {
+        const snap = await db.ref(`${SERVERS_ROOT}/${id}`).once('value');
+        info = snap.val() || {};
+      } catch (err) {
+        console.error('Failed to read server info', err);
+        showBanner('Failed to select server');
+        return;
+      }
+
+      // If server is private and user hasn't joined it yet, require password (unless admin)
+      if (info.isPrivate && !hasJoinedServer(id)) {
+        if (isAdminLocal()) {
+          // admin bypasses password
+          markJoinedServer(id);
+        } else {
+          const pw = prompt(`Server "${info.name || id}" is private. Enter password to join:`);
+          if (pw === null) return; // user cancelled
+          if (pw !== (info.password || '')) {
+            showBanner('Incorrect server password');
+            return;
+          }
+          // correct password: remember join locally
+          markJoinedServer(id);
+        }
+      }
+
+      // detach previous messages listener
       if (messagesRef) messagesRef.off();
+
       currentServerId = id;
-      // update title
-      db.ref(`${SERVERS_ROOT}/${id}`).once('value').then(snap => {
-        const info = snap.val() || {};
+
+      // update title and subtitle
+      try {
         document.getElementById('currentServerTitle').textContent = 'Server: ' + (info.name || id);
         document.getElementById('currentServerSubtitle').textContent = info.isPrivate ? 'Private server' : 'Public server';
-      }).catch(()=>{ document.getElementById('currentServerTitle').textContent = 'Server'; });
+      } catch (e) {}
+
+      // update active class
       document.querySelectorAll('.server').forEach(s => s.classList.toggle('active', s.dataset.serverId === id));
+
+      // start listening messages for this server
       startMessagesForServer(id);
     }
 
@@ -557,6 +614,7 @@
           const pw = prompt('Enter password for server "' + (info.name || id) + '":');
           if (pw === null) return;
           if (pw === (info.password || '')) {
+            markJoinedServer(id);
             selectServer(id);
             createJoinModal.style.display = 'none';
             showBanner('Joined private server');
