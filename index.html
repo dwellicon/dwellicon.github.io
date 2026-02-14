@@ -9,6 +9,7 @@
     .msg { margin:6px 0; padding:6px 8px; border-radius:6px; background:#fff; box-shadow:0 1px 0 rgba(0,0,0,0.04); }
     #controls { margin-top:10px; display:flex; gap:8px; }
     input[type=text] { flex:1; padding:8px; }
+    #status { margin-top:8px; color:#666; font-size:13px; }
   </style>
 </head>
 <body>
@@ -22,52 +23,105 @@
   <button id="send">Send</button>
 </div>
 
-<!-- Firebase SDKs -->
+<div id="status">Status: <span id="statustxt">initializing…</span></div>
+
+<!-- Firebase compat SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
-  // Replace with your Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyAulcwmA2r2Z0Wv5mxyuWwQvPv05E8HvMU",
-  authDomain: "dwellicon-42e72.firebaseapp.com",
-  databaseURL: "https://dwellicon-42e72-default-rtdb.firebaseio.com",
-  projectId: "dwellicon-42e72",
-  storageBucket: "dwellicon-42e72.appspot.com",
-  messagingSenderId: "634657717896",
-  appId: "1:634657717896:web:27f246614fdb2c2398a93d",
-  measurementId: "G-GP1YBL86RB"
-};
+  // Paste the exact firebaseConfig object from Firebase Console here
+  const firebaseConfig = {
+    apiKey: "AIzaSyAulcwmA2r2Z0Wv5mxyuWwQvPv05E8HvMU",
+    authDomain: "dwellicon-42e72.firebaseapp.com",
+    databaseURL: "https://dwellicon-42e72-default-rtdb.firebaseio.com",
+    projectId: "dwellicon-42e72",
+    storageBucket: "dwellicon-42e72.appspot.com",
+    messagingSenderId: "634657717896",
+    appId: "1:634657717896:web:27f246614fdb2c2398a93d",
+    measurementId: "G-GP1YBL86RB"
+  };
 
+  // Debug: show config in console so you can verify values loaded on the page
+  console.log('firebaseConfig', firebaseConfig);
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database().ref('messages');
+  const statusEl = document.getElementById('statustxt');
+
+  // Basic validation before initializeApp
+  if (!firebaseConfig || !firebaseConfig.projectId) {
+    console.error('Missing firebaseConfig or projectId. Copy the Web app config from Firebase Console.');
+    statusEl.textContent = 'config missing projectId';
+  } else if (!firebaseConfig.databaseURL) {
+    console.error('Missing databaseURL in firebaseConfig. Add the Realtime Database URL from Firebase Console.');
+    statusEl.textContent = 'missing databaseURL';
+  } else {
+    try {
+      firebase.initializeApp(firebaseConfig);
+      statusEl.textContent = 'initialized';
+    } catch (err) {
+      console.error('firebase.initializeApp error', err);
+      statusEl.textContent = 'init error';
+    }
+  }
+
+  // If initialization succeeded, wire up database
+  let dbRef = null;
+  try {
+    if (firebase && firebase.database) {
+      dbRef = firebase.database().ref('messages');
+    } else {
+      console.error('firebase.database is not available. Check SDK scripts.');
+      statusEl.textContent = 'database SDK missing';
+    }
+  } catch (err) {
+    console.error('Error getting database reference', err);
+    statusEl.textContent = 'db ref error';
+  }
 
   const chat = document.getElementById('chat');
   const nameInput = document.getElementById('name');
   const msgInput = document.getElementById('msg');
   const sendBtn = document.getElementById('send');
 
-  // Listen for new messages
-  db.limitToLast(100).on('child_added', snap => {
-    const data = snap.val();
-    const el = document.createElement('div');
-    el.className = 'msg';
-    el.textContent = `${data.name}: ${data.text}`;
-    chat.appendChild(el);
-    chat.scrollTop = chat.scrollHeight;
-  });
+  if (dbRef) {
+    // Listen for new messages (last 100)
+    dbRef.limitToLast(100).on('child_added', snap => {
+      const data = snap.val() || {};
+      const name = data.name || 'Guest';
+      const text = data.text || '';
+      const el = document.createElement('div');
+      el.className = 'msg';
+      el.textContent = `${name}: ${text}`;
+      chat.appendChild(el);
+      chat.scrollTop = chat.scrollHeight;
+    }, err => {
+      console.error('Realtime DB listen error', err);
+      statusEl.textContent = 'listen error';
+    });
+    statusEl.textContent = 'connected';
+  }
 
   // Send message
   sendBtn.onclick = () => {
     const text = msgInput.value.trim();
     const name = nameInput.value.trim() || 'Guest';
     if (!text) return;
-    db.push({ name, text, ts: Date.now() });
-    msgInput.value = '';
+    if (!dbRef) {
+      console.error('No database reference. Message not sent.');
+      statusEl.textContent = 'not connected';
+      return;
+    }
+    // Minimal client-side sanitization: limit length
+    const safeText = text.slice(0, 300);
+    dbRef.push({ name, text: safeText, ts: Date.now() })
+      .then(() => { msgInput.value = ''; })
+      .catch(err => {
+        console.error('Push error', err);
+        statusEl.textContent = 'send error';
+      });
   };
 
-  // Optional: send on Enter
+  // Send on Enter
   msgInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendBtn.click(); });
 </script>
 
