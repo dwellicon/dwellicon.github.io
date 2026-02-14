@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Chat with Members & Admin Tools</title>
+  <title>Chat with Members & Admin Tools (Fixed Kicks)</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     :root{
@@ -184,7 +184,6 @@
       banner.style.display = 'block';
       setTimeout(()=> banner.style.display = 'none', ms);
     }
-
     function now() { return Date.now(); }
 
     // local user
@@ -390,7 +389,8 @@
       const u = currentUser();
       if (!isAdminLocal()) { showBanner('Admin only'); return; }
       try {
-        await db.ref(`${KICKS_ROOT}/${modalTargetUid}`).set({ ts: now(), by: u.uid, byName: u.username });
+        // write kick entry; include a TTL field so clients can auto-remove if desired
+        await db.ref(`${KICKS_ROOT}/${modalTargetUid}`).set({ ts: now(), by: u.uid, byName: u.username, ttl: 30000 });
         showBanner('Kick sent');
       } catch (err) {
         console.error('kick error', err);
@@ -405,7 +405,6 @@
       const u = currentUser();
       if (!isAdminLocal()) { showBanner('Admin only'); return; }
       try {
-        // store username for Banland display
         const targetName = document.querySelector(`.member[data-uid="${modalTargetUid}"] .name`)?.textContent || modalTargetUid;
         await db.ref(`${BANS_ROOT}/${modalTargetUid}`).set({ ts: now(), by: u.uid, byName: u.username, username: targetName });
         showBanner('Ban applied');
@@ -416,19 +415,39 @@
       memberModal.style.display = 'none';
     });
 
-    // Kick listener
+    // Kick listener: handle child_added and child_removed to avoid persistent kicks
     function startKickListener() {
-      db.ref(KICKS_ROOT).on('child_added', snap => {
+      const ref = db.ref(KICKS_ROOT);
+      // when a kick is added
+      ref.on('child_added', snap => {
         const targetUid = snap.key;
-        const data = snap.val();
+        const data = snap.val() || {};
         const me = currentUser();
         if (me && me.uid === targetUid) {
-          // show kicked overlay and set session flag
+          // set local kicked flag and show overlay
           localStorage.setItem(`kicked_${me.uid}`, '1');
           showKicked();
         }
-        // auto-remove kick after 30s so it's temporary
-        setTimeout(()=> db.ref(`${KICKS_ROOT}/${targetUid}`).remove().catch(()=>{}), 30000);
+        // If the kick has a TTL, schedule removal by the client that created it (best-effort)
+        if (data && data.ttl && data.ts) {
+          const removeAt = data.ts + data.ttl;
+          const delay = Math.max(0, removeAt - now());
+          setTimeout(()=> {
+            // remove the kick entry (only the client that created it will likely succeed)
+            db.ref(`${KICKS_ROOT}/${targetUid}`).remove().catch(()=>{});
+          }, delay + 500);
+        }
+      });
+
+      // when a kick is removed, clear local flag and hide overlay for that uid
+      ref.on('child_removed', snap => {
+        const targetUid = snap.key;
+        const me = currentUser();
+        // clear local kicked flag for the removed uid
+        localStorage.removeItem(`kicked_${targetUid}`);
+        if (me && me.uid === targetUid) {
+          hideKicked();
+        }
       });
     }
 
@@ -438,9 +457,9 @@
       ref.on('child_added', snap => {
         const targetUid = snap.key;
         const data = snap.val() || {};
-        const me = currentUser();
-        // set local banned flag for the target (persist across refresh)
+        // persist ban locally for that uid
         localStorage.setItem(`banned_${targetUid}`, JSON.stringify({ ts: data.ts || now(), by: data.by || null, byName: data.byName || null, username: data.username || null }));
+        const me = currentUser();
         if (me && me.uid === targetUid) {
           showBanned();
         }
@@ -516,6 +535,20 @@
       startMembersListener();
       startKickListener();
       startBanListener();
+
+      // Ensure local kicked flag matches DB state on load:
+      // If there's no kick entry for this uid, clear local kicked flag.
+      db.ref(`${KICKS_ROOT}/${u.uid}`).once('value').then(snap => {
+        if (!snap.exists()) {
+          localStorage.removeItem(`kicked_${u.uid}`);
+          hideKicked();
+        } else {
+          // if kick exists, ensure overlay shows
+          localStorage.setItem(`kicked_${u.uid}`, '1');
+          showKicked();
+        }
+      }).catch(()=>{});
+
       // if banned locally, show banned screen
       if (isBannedLocal()) showBanned();
       appendSystemMessage('You are signed in as ' + u.username + (isAdminLocal() ? ' (admin)' : ''));
