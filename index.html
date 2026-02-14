@@ -25,7 +25,7 @@
       padding:10px 8px; gap:8px; box-shadow: 4px 0 18px rgba(2,6,23,0.12);
     }
     .server-list { flex:1; width:100%; overflow:auto; display:flex; flex-direction:column; gap:8px; align-items:center; padding:6px 0; }
-    .server { width:48px; height:48px; border-radius:50%; background:#111827; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; cursor:pointer; border:2px solid transparent; transition:all .12s; user-select:none; }
+    .server { width:48px; height:48px; border-radius:50%; background:#111827; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; cursor:pointer; border:2px solid transparent; transition:all .12s; user-select:none; position:relative; }
     .server:hover { transform:scale(1.04); }
     .server.active { border-color:var(--accent); box-shadow:0 6px 18px rgba(79,70,229,0.12); }
     .server .label { font-size:12px; pointer-events:none; }
@@ -80,6 +80,32 @@
     .tab.active{background:var(--accent);color:white}
     .server-row{display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid #eef2f7}
     .lock-icon{margin-left:8px;color:#f59e0b}
+
+    /* custom context menu */
+    #serverContextMenu {
+      position: fixed;
+      z-index: 2000;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 8px 30px rgba(10,20,40,0.2);
+      padding: 8px;
+      display: none;
+      min-width: 140px;
+      font-size: 14px;
+      color: #0f1724;
+    }
+    #serverContextMenu button {
+      display:block;
+      width:100%;
+      text-align:left;
+      padding:8px;
+      border:0;
+      background:transparent;
+      cursor:pointer;
+      border-radius:6px;
+    }
+    #serverContextMenu button:hover { background:#f3f4f6; }
+
     @media (max-width:900px){ .members-column{display:none} .servers-column{display:none} }
   </style>
 </head>
@@ -172,7 +198,7 @@
       <!-- Join -->
       <div id="joinPane" style="display:none">
         <h3>Join Server</h3>
-        <div style="margin-top:8px" class="muted">Pick a server to join. Private servers require a password.</div>
+        <div style="margin-top:8px" class="muted">Pick a server to join. Private servers require a password and are not listed publicly.</div>
         <div id="joinList" style="margin-top:12px;max-height:260px;overflow:auto;border:1px solid #eef2f7;border-radius:8px;padding:6px"></div>
         <div class="row" style="margin-top:12px">
           <button id="joinClose" class="btn" style="background:#e5e7eb">Close</button>
@@ -242,6 +268,11 @@
   </div>
 
   <div id="banner" class="banner"></div>
+
+  <!-- server context menu -->
+  <div id="serverContextMenu" role="menu" aria-hidden="true">
+    <!-- buttons are injected dynamically -->
+  </div>
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -313,6 +344,8 @@
     const kickedScreen = document.getElementById('kickedScreen');
     const bannedScreen = document.getElementById('bannedScreen');
 
+    const serverContextMenu = document.getElementById('serverContextMenu');
+
     // DB paths
     const PRESENCE_ROOT = 'presence';
     const SERVERS_ROOT = 'servers';
@@ -328,6 +361,7 @@
     let currentServerId = null;
     let serversRef = null;
     let messagesRef = null;
+    let lastContextServerId = null;
 
     // helpers
     function showBanner(text, ms = 2500) {
@@ -384,6 +418,14 @@
         localStorage.setItem('joined_servers', JSON.stringify(arr));
       }
     }
+    function unmarkJoinedServer(serverId) {
+      const arr = getJoinedServers();
+      const idx = arr.indexOf(serverId);
+      if (idx !== -1) {
+        arr.splice(idx,1);
+        localStorage.setItem('joined_servers', JSON.stringify(arr));
+      }
+    }
     function hasJoinedServer(serverId) {
       if (isAdminLocal()) return true; // admins always allowed
       const arr = getJoinedServers();
@@ -410,9 +452,17 @@
         const val = snap.val() || {};
         renderServers(val);
         if (!currentServerId) {
+          // pick a visible server for this user (public or joined or created)
           const keys = Object.keys(val);
-          if (keys.length) selectServer(keys[0]);
-          else createDefaultServerIfMissing();
+          for (let k of keys) {
+            const info = val[k] || {};
+            if (!info.isPrivate || hasJoinedServer(k) || info.createdBy === currentUser().uid || isAdminLocal()) {
+              selectServer(k);
+              break;
+            }
+          }
+          // if none found, create default
+          if (!currentServerId) createDefaultServerIfMissing();
         }
       }, err => console.error('servers listen error', err));
     }
@@ -430,6 +480,11 @@
       const entries = Object.entries(obj || {});
       entries.sort((a,b) => (a[1].createdAt || 0) - (b[1].createdAt || 0));
       entries.forEach(([id, info]) => {
+        // filter: private servers are only shown if user joined them, or created them, or is admin
+        if (info.isPrivate && !hasJoinedServer(id) && info.createdBy !== currentUser().uid && !isAdminLocal()) {
+          return; // skip rendering this private server
+        }
+
         const wrap = document.createElement('div');
         wrap.style.display = 'flex';
         wrap.style.flexDirection = 'column';
@@ -445,14 +500,11 @@
 
         el.addEventListener('click', () => selectServer(id));
 
+        // custom context menu on right-click
         el.addEventListener('contextmenu', (ev) => {
           ev.preventDefault();
-          if (!isAdminLocal()) { showBanner('Admin only'); return; }
-          const confirmDelete = confirm(`Delete server "${info.name}"? This removes its messages and cannot be undone.`);
-          if (!confirmDelete) return;
-          db.ref(`${SERVERS_ROOT}/${id}`).remove().catch(()=>{});
-          db.ref(`${MESSAGES_ROOT}/${id}`).remove().catch(()=>{});
-          showBanner('Server deleted');
+          lastContextServerId = id;
+          showServerContextMenu(ev.clientX, ev.clientY, id, info);
         });
 
         const nameEl = document.createElement('div');
@@ -464,6 +516,96 @@
         serverListEl.appendChild(wrap);
       });
     }
+
+    // context menu logic
+    function showServerContextMenu(x, y, serverId, info) {
+      serverContextMenu.innerHTML = '';
+      serverContextMenu.style.left = x + 'px';
+      serverContextMenu.style.top = y + 'px';
+      serverContextMenu.style.display = 'block';
+      serverContextMenu.setAttribute('aria-hidden','false');
+
+      // If user is admin, show Delete option
+      if (isAdminLocal()) {
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Delete Server';
+        delBtn.addEventListener('click', async () => {
+          serverContextMenu.style.display = 'none';
+          const confirmDelete = confirm(`Delete server "${info.name}"? This removes its messages and cannot be undone.`);
+          if (!confirmDelete) return;
+          await db.ref(`${SERVERS_ROOT}/${serverId}`).remove().catch(()=>{});
+          await db.ref(`${MESSAGES_ROOT}/${serverId}`).remove().catch(()=>{});
+          showBanner('Server deleted');
+          // if deleted server was current, clear selection
+          if (currentServerId === serverId) currentServerId = null;
+        });
+        serverContextMenu.appendChild(delBtn);
+      }
+
+      // If server is private and user has joined, show Leave option
+      if (info.isPrivate && hasJoinedServer(serverId) && info.createdBy !== currentUser().uid) {
+        const leaveBtn = document.createElement('button');
+        leaveBtn.textContent = 'Leave Server';
+        leaveBtn.addEventListener('click', () => {
+          serverContextMenu.style.display = 'none';
+          const ok = confirm(`Leave private server "${info.name}"? You will need the password to rejoin.`);
+          if (!ok) return;
+          unmarkJoinedServer(serverId);
+          showBanner('Left server');
+          // if currently viewing it, switch to a public or joined server
+          if (currentServerId === serverId) {
+            currentServerId = null;
+            // try to select another visible server
+            db.ref(SERVERS_ROOT).once('value').then(snap => {
+              const servers = snap.val() || {};
+              for (let k in servers) {
+                const s = servers[k];
+                if (!s.isPrivate || hasJoinedServer(k) || s.createdBy === currentUser().uid || isAdminLocal()) {
+                  selectServer(k);
+                  return;
+                }
+              }
+              // none found: clear chat
+              chatEl.innerHTML = '';
+              document.getElementById('currentServerTitle').textContent = 'No server';
+              document.getElementById('currentServerSubtitle').textContent = '';
+            }).catch(()=>{});
+          }
+        });
+        serverContextMenu.appendChild(leaveBtn);
+      }
+
+      // If user created the private server, allow Leave (but creator remains joined)
+      if (info.isPrivate && info.createdBy === currentUser().uid) {
+        const ownerNote = document.createElement('button');
+        ownerNote.textContent = 'You are owner';
+        ownerNote.disabled = true;
+        serverContextMenu.appendChild(ownerNote);
+      }
+
+      // If no options were added, show a simple Close
+      if (serverContextMenu.children.length === 0) {
+        const closeBtn = document.createElement('button');
+        closeBtn.textContent = 'Close';
+        closeBtn.addEventListener('click', () => { serverContextMenu.style.display = 'none'; });
+        serverContextMenu.appendChild(closeBtn);
+      }
+    }
+
+    // hide context menu on click elsewhere
+    document.addEventListener('click', (e) => {
+      if (serverContextMenu.style.display === 'block') {
+        serverContextMenu.style.display = 'none';
+        serverContextMenu.setAttribute('aria-hidden','true');
+      }
+    });
+    // hide on escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        serverContextMenu.style.display = 'none';
+        serverContextMenu.setAttribute('aria-hidden','true');
+      }
+    });
 
     // Select server with private-check and local join memory
     async function selectServer(id) {
@@ -481,8 +623,8 @@
         return;
       }
 
-      // If server is private and user hasn't joined it yet, require password (unless admin)
-      if (info.isPrivate && !hasJoinedServer(id)) {
+      // If server is private and user hasn't joined it yet, require password (unless admin or creator)
+      if (info.isPrivate && !hasJoinedServer(id) && info.createdBy !== currentUser().uid) {
         if (isAdminLocal()) {
           // admin bypasses password
           markJoinedServer(id);
@@ -558,6 +700,8 @@
           isPrivate: !!isPrivate,
           password: isPrivate ? password : null
         });
+        // mark creator as joined automatically
+        if (isPrivate) markJoinedServer(id);
         createJoinModal.style.display = 'none';
         showBanner('Server created');
         selectServer(id);
@@ -581,6 +725,9 @@
       }
       entries.sort((a,b) => (a[1].createdAt||0) - (b[1].createdAt||0));
       entries.forEach(([id, info]) => {
+        // For join list: show public servers only. Private servers are NOT listed (per request).
+        if (info.isPrivate) return;
+
         const row = document.createElement('div');
         row.className = 'server-row';
         const left = document.createElement('div');
@@ -590,12 +737,6 @@
         title.textContent = info.name || id;
         title.style.fontWeight = '600';
         left.appendChild(title);
-        if (info.isPrivate) {
-          const lock = document.createElement('span');
-          lock.className = 'lock-icon';
-          lock.innerHTML = '🔒';
-          left.appendChild(lock);
-        }
         const right = document.createElement('div');
         const btn = document.createElement('button');
         btn.className = 'btn';
@@ -603,31 +744,23 @@
         btn.style.background = '#4f46e5';
         btn.style.color = '#fff';
         btn.addEventListener('click', async () => {
-          if (!info.isPrivate) {
-            // join public
-            selectServer(id);
-            createJoinModal.style.display = 'none';
-            showBanner('Joined server');
-            return;
-          }
-          // private: prompt for password
-          const pw = prompt('Enter password for server "' + (info.name || id) + '":');
-          if (pw === null) return;
-          if (pw === (info.password || '')) {
-            markJoinedServer(id);
-            selectServer(id);
-            createJoinModal.style.display = 'none';
-            showBanner('Joined private server');
-          } else {
-            joinError.textContent = 'Incorrect password';
-            joinError.style.display = 'block';
-          }
+          selectServer(id);
+          createJoinModal.style.display = 'none';
+          showBanner('Joined server');
         });
         right.appendChild(btn);
         row.appendChild(left);
         row.appendChild(right);
         joinList.appendChild(row);
       });
+
+      // Inform user how to join private servers
+      const note = document.createElement('div');
+      note.style.marginTop = '8px';
+      note.style.fontSize = '13px';
+      note.style.color = 'var(--muted)';
+      note.textContent = 'Private servers are not listed. To join a private server, use the server name and password via the Join flow (enter server name and password).';
+      joinList.parentNode.insertBefore(note, joinList.nextSibling);
     }
 
     joinClose.addEventListener('click', () => createJoinModal.style.display = 'none');
@@ -1020,7 +1153,7 @@
     banlandModal.addEventListener('click', (ev) => { if (ev.target === banlandModal) banlandModal.style.display = 'none'; });
 
     // expose helpers for debugging
-    window.__chatHelpers = { currentUser, isAdminLocal, isBannedLocal, isKickedThisSession, showBanner, selectServer, refreshJoinList };
+    window.__chatHelpers = { currentUser, isAdminLocal, isBannedLocal, isKickedThisSession, showBanner, selectServer, refreshJoinList, getJoinedServers };
   </script>
 </body>
 </html>
