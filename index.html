@@ -43,16 +43,13 @@
     .member .info{display:flex;flex-direction:column}
     .member .name{font-weight:600;font-size:14px;display:flex;gap:8px;align-items:center}
     .member .status{font-size:12px;color:var(--muted)}
-    /* overlays and modals */
     .overlay{position:fixed;inset:0;background:rgba(10,12,20,0.45);display:flex;align-items:center;justify-content:center;z-index:999;display:none}
     .modal{background:white;padding:16px;border-radius:10px;min-width:320px;box-shadow:0 12px 40px rgba(10,20,40,0.3)}
     .modal h3{margin:0 0 8px 0}
     .modal .row{display:flex;gap:8px;margin-top:12px}
     .danger{background:#ef4444;color:white}
     .muted{color:var(--muted);font-size:13px}
-    /* small banners */
-    .banner{position:fixed;left:16px;bottom:16px;background:#fff;padding:10px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.08);font-size:13px}
-    /* kicked / banned full-screen */
+    .banner{position:fixed;left:16px;bottom:16px;background:#fff;padding:10px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.08);font-size:13px;display:none}
     .block-screen{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:1000;color:white;font-size:18px;display:none}
     .block-screen .card{background:rgba(255,255,255,0.06);padding:20px;border-radius:10px;text-align:center}
     @media (max-width:900px){.members-column{display:none}}
@@ -67,7 +64,6 @@
           <h1>Private Chat</h1>
           <p class="muted">Real-time messages — admin: Kyson</p>
         </div>
-
         <div class="header-right">
           <input id="displayNameInput" class="name-input" type="text" placeholder="Your name">
           <button id="banlandBtn" class="btn" title="Alt+X to open Banland" style="background:#f59e0b;color:#fff;display:none">Banland</button>
@@ -94,7 +90,6 @@
     </aside>
   </div>
 
-  <!-- Member action modal -->
   <div id="memberModal" class="overlay">
     <div class="modal" role="dialog" aria-modal="true">
       <h3 id="modalName">Member</h3>
@@ -108,7 +103,6 @@
     </div>
   </div>
 
-  <!-- Banland modal -->
   <div id="banlandModal" class="overlay">
     <div class="modal" role="dialog" aria-modal="true">
       <h3>Banland (unban)</h3>
@@ -119,7 +113,6 @@
     </div>
   </div>
 
-  <!-- Kicked / Banned full-screen blocks -->
   <div id="kickedScreen" class="block-screen">
     <div class="card">
       <div style="font-size:20px;font-weight:700">You were kicked</div>
@@ -134,9 +127,8 @@
     </div>
   </div>
 
-  <div id="banner" class="banner" style="display:none"></div>
+  <div id="banner" class="banner"></div>
 
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
@@ -159,7 +151,6 @@
     const chatEl = document.getElementById('chat');
     const msgInput = document.getElementById('msg');
     const sendBtn = document.getElementById('send');
-    const attachBtn = document.getElementById('attach');
     const displayNameInput = document.getElementById('displayNameInput');
     const membersListEl = document.getElementById('membersList');
     const onlineCountEl = document.getElementById('onlineCount');
@@ -187,7 +178,16 @@
     const KICKS_ROOT = 'kicks';
     const BANS_ROOT = 'bans';
 
-    // local session helpers
+    // helpers
+    function showBanner(text, ms = 2500) {
+      banner.textContent = text;
+      banner.style.display = 'block';
+      setTimeout(()=> banner.style.display = 'none', ms);
+    }
+
+    function now() { return Date.now(); }
+
+    // local user
     function currentUser() {
       const stored = localStorage.getItem('chat_user');
       if (stored) return JSON.parse(stored);
@@ -202,8 +202,8 @@
       const u = currentUser();
       u.username = name;
       localStorage.setItem('chat_user', JSON.stringify(u));
-      // update presence record if exists
-      db.ref(`${PRESENCE_ROOT}/${u.uid}`).update({ username: name }).catch(()=>{});
+      // update presence with isAdmin flag
+      db.ref(`${PRESENCE_ROOT}/${u.uid}`).update({ username: name, isAdmin: (name === 'Kyson') }).catch(()=>{});
       updateAdminUI();
     }
 
@@ -212,11 +212,9 @@
       return (u && u.username === 'Kyson');
     }
 
-    // show small banner
-    function showBanner(text, ms = 2500) {
-      banner.textContent = text;
-      banner.style.display = 'block';
-      setTimeout(()=> banner.style.display = 'none', ms);
+    function updateAdminUI() {
+      if (isAdminLocal()) banlandBtn.style.display = 'inline-block';
+      else banlandBtn.style.display = 'none';
     }
 
     // presence
@@ -224,11 +222,12 @@
     let heartbeatTimer = null;
     function startPresence(uid, username) {
       presenceRef = db.ref(`${PRESENCE_ROOT}/${uid}`);
-      presenceRef.set({ username, online: true, lastSeen: Date.now() }).catch(()=>{});
+      const isAdmin = (username === 'Kyson');
+      presenceRef.set({ username, online: true, lastSeen: now(), isAdmin }).catch(()=>{});
       presenceRef.onDisconnect().remove().catch(()=>{});
       if (heartbeatTimer) clearInterval(heartbeatTimer);
       heartbeatTimer = setInterval(()=> {
-        db.ref(`${PRESENCE_ROOT}/${uid}`).update({ lastSeen: Date.now(), online: true, username }).catch(()=>{});
+        db.ref(`${PRESENCE_ROOT}/${uid}`).update({ lastSeen: now(), online: true, username, isAdmin }).catch(()=>{});
       }, 25000);
     }
     function stopPresence(uid) {
@@ -241,7 +240,7 @@
     function startMessages() {
       if (messagesRef) return;
       messagesRef = db.ref(MESSAGES_REF);
-      messagesRef.limitToLast(200).on('child_added', snap => {
+      messagesRef.limitToLast(500).on('child_added', snap => {
         appendChatMessage(snap.val());
       }, err => appendSystemMessage('Listen error: ' + (err && err.message ? err.message : err)));
     }
@@ -261,17 +260,21 @@
       const nameSpan = document.createElement('span');
       nameSpan.textContent = data.name || 'Guest';
       meta.appendChild(nameSpan);
-      if ((data.name || '') === 'Kyson') {
+
+      // show admin badge if message flagged or name is Kyson
+      if (data.isAdmin || (data.name === 'Kyson')) {
         const badge = document.createElement('span');
         badge.className = 'admin-badge';
         badge.textContent = 'ADMIN';
         meta.appendChild(badge);
       }
+
       const timeSpan = document.createElement('span');
       timeSpan.style.marginLeft = '8px';
       timeSpan.style.color = 'var(--muted)';
       timeSpan.textContent = '• ' + new Date(data.ts || Date.now()).toLocaleTimeString();
       meta.appendChild(timeSpan);
+
       const body = document.createElement('div');
       body.textContent = data.text || '';
       el.appendChild(meta);
@@ -280,7 +283,7 @@
       chatEl.scrollTop = chatEl.scrollHeight;
     }
 
-    // send message
+    // send message (include isAdmin flag)
     sendBtn.addEventListener('click', sendMessage);
     msgInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
 
@@ -291,7 +294,8 @@
       const text = raw.replace(/\r?\n|\r/g,' ').trim().slice(0,300);
       if (!text) return;
       const u = currentUser();
-      db.ref(MESSAGES_REF).push({ name: u.username, text, ts: Date.now(), uid: u.uid }).then(()=> {
+      const isAdmin = (u.username === 'Kyson');
+      db.ref(MESSAGES_REF).push({ name: u.username, text, ts: now(), uid: u.uid, isAdmin }).then(()=> {
         msgInput.value = '';
       }).catch(err => {
         console.error('push error', err);
@@ -330,7 +334,8 @@
         const name = document.createElement('div');
         name.className = 'name';
         name.textContent = info.username || uid;
-        if ((info.username || '') === 'Kyson') {
+        // show admin badge if presence says isAdmin or username is Kyson
+        if (info.isAdmin || (info.username === 'Kyson')) {
           const adminTag = document.createElement('span');
           adminTag.className = 'admin-badge';
           adminTag.textContent = 'ADMIN';
@@ -345,9 +350,7 @@
         member.appendChild(avatar);
         member.appendChild(infoWrap);
 
-        // click to open member modal
         member.addEventListener('click', () => openMemberModal(uid, info));
-
         membersListEl.appendChild(member);
       });
       onlineCountEl.textContent = entries.length + ' online';
@@ -363,14 +366,13 @@
       return h + 'h';
     }
 
-    // member modal actions
+    // member modal
     let modalTargetUid = null;
     function openMemberModal(uid, info) {
       modalTargetUid = uid;
       modalName.textContent = info.username || uid;
       modalUid.textContent = uid;
       modalStatus.textContent = info.online ? 'online' : 'offline';
-      // show/hide admin actions based on local admin
       if (isAdminLocal()) {
         kickBtn.style.display = 'inline-block';
         banBtn.style.display = 'inline-block';
@@ -382,11 +384,13 @@
     }
     closeModal.addEventListener('click', ()=> memberModal.style.display = 'none');
 
-    // Kick: write to /kicks/{uid} with timestamp
+    // Kick: write to /kicks/{uid}
     kickBtn.addEventListener('click', async () => {
       if (!modalTargetUid) return;
+      const u = currentUser();
+      if (!isAdminLocal()) { showBanner('Admin only'); return; }
       try {
-        await db.ref(`${KICKS_ROOT}/${modalTargetUid}`).set({ ts: Date.now(), by: currentUser().uid });
+        await db.ref(`${KICKS_ROOT}/${modalTargetUid}`).set({ ts: now(), by: u.uid, byName: u.username });
         showBanner('Kick sent');
       } catch (err) {
         console.error('kick error', err);
@@ -395,11 +399,15 @@
       memberModal.style.display = 'none';
     });
 
-    // Ban: write to /bans/{uid} with timestamp
+    // Ban: write to /bans/{uid}
     banBtn.addEventListener('click', async () => {
       if (!modalTargetUid) return;
+      const u = currentUser();
+      if (!isAdminLocal()) { showBanner('Admin only'); return; }
       try {
-        await db.ref(`${BANS_ROOT}/${modalTargetUid}`).set({ ts: Date.now(), by: currentUser().uid });
+        // store username for Banland display
+        const targetName = document.querySelector(`.member[data-uid="${modalTargetUid}"] .name`)?.textContent || modalTargetUid;
+        await db.ref(`${BANS_ROOT}/${modalTargetUid}`).set({ ts: now(), by: u.uid, byName: u.username, username: targetName });
         showBanner('Ban applied');
       } catch (err) {
         console.error('ban error', err);
@@ -408,76 +416,62 @@
       memberModal.style.display = 'none';
     });
 
-    // Listen for kicks and bans
+    // Kick listener
     function startKickListener() {
       db.ref(KICKS_ROOT).on('child_added', snap => {
         const targetUid = snap.key;
         const data = snap.val();
         const me = currentUser();
         if (me && me.uid === targetUid) {
-          // show kicked overlay for this session
+          // show kicked overlay and set session flag
+          localStorage.setItem(`kicked_${me.uid}`, '1');
           showKicked();
         }
-        // remove the kick entry after a short time so it's session-only
-        setTimeout(()=> db.ref(`${KICKS_ROOT}/${targetUid}`).remove().catch(()=>{}), 15000);
+        // auto-remove kick after 30s so it's temporary
+        setTimeout(()=> db.ref(`${KICKS_ROOT}/${targetUid}`).remove().catch(()=>{}), 30000);
       });
     }
 
+    // Ban listener
     function startBanListener() {
       const ref = db.ref(BANS_ROOT);
       ref.on('child_added', snap => {
         const targetUid = snap.key;
+        const data = snap.val() || {};
         const me = currentUser();
+        // set local banned flag for the target (persist across refresh)
+        localStorage.setItem(`banned_${targetUid}`, JSON.stringify({ ts: data.ts || now(), by: data.by || null, byName: data.byName || null, username: data.username || null }));
         if (me && me.uid === targetUid) {
-          // set local banned flag and show banned screen
-          localStorage.setItem(`banned_${me.uid}`, '1');
           showBanned();
         }
-        // update Banland UI
         refreshBanland();
       });
       ref.on('child_removed', snap => {
         const targetUid = snap.key;
+        localStorage.removeItem(`banned_${targetUid}`);
         const me = currentUser();
-        if (me && me.uid === targetUid) {
-          // clear local banned flag
-          localStorage.removeItem(`banned_${me.uid}`);
-          hideBanned();
-        }
+        if (me && me.uid === targetUid) hideBanned();
         refreshBanland();
       });
     }
 
     // Kicked UI
-    function showKicked() {
-      kickedScreen.style.display = 'flex';
-    }
-    function hideKicked() {
-      kickedScreen.style.display = 'none';
-    }
-    function isKickedThisSession() {
-      return kickedScreen.style.display === 'flex';
-    }
+    function showKicked() { kickedScreen.style.display = 'flex'; }
+    function hideKicked() { kickedScreen.style.display = 'none'; }
+    function isKickedThisSession() { return !!localStorage.getItem(`kicked_${currentUser().uid}`); }
 
     // Banned UI
-    function showBanned() {
-      bannedScreen.style.display = 'flex';
-    }
-    function hideBanned() {
-      bannedScreen.style.display = 'none';
-    }
-    function isBannedLocal() {
-      const me = currentUser();
-      return !!localStorage.getItem(`banned_${me.uid}`);
-    }
+    function showBanned() { bannedScreen.style.display = 'flex'; }
+    function hideBanned() { bannedScreen.style.display = 'none'; }
+    function isBannedLocal() { return !!localStorage.getItem(`banned_${currentUser().uid}`); }
 
     // Banland
     banlandBtn.addEventListener('click', openBanland);
     closeBanland.addEventListener('click', ()=> banlandModal.style.display = 'none');
 
-    function openBanland() {
+    async function openBanland() {
       if (!isAdminLocal()) { showBanner('Admin only'); return; }
-      refreshBanland();
+      await refreshBanland();
       banlandModal.style.display = 'flex';
     }
 
@@ -512,16 +506,7 @@
       });
     }
 
-    // Admin UI toggle
-    function updateAdminUI() {
-      if (isAdminLocal()) {
-        banlandBtn.style.display = 'inline-block';
-      } else {
-        banlandBtn.style.display = 'none';
-      }
-    }
-
-    // On load: resume or create user, start listeners
+    // init
     (function init() {
       const u = currentUser();
       displayNameInput.value = u.username || '';
@@ -531,9 +516,8 @@
       startMembersListener();
       startKickListener();
       startBanListener();
-      // if local banned flag exists, show banned
+      // if banned locally, show banned screen
       if (isBannedLocal()) showBanned();
-      // show small welcome
       appendSystemMessage('You are signed in as ' + u.username + (isAdminLocal() ? ' (admin)' : ''));
     })();
 
@@ -556,11 +540,20 @@
       }
     });
 
-    // Clicking outside modals closes them
+    // close modals on outside click
     memberModal.addEventListener('click', (ev) => { if (ev.target === memberModal) memberModal.style.display = 'none'; });
     banlandModal.addEventListener('click', (ev) => { if (ev.target === banlandModal) banlandModal.style.display = 'none'; });
 
-    // Helper: create or return current user in localStorage
+    // helper: set username and presence update
+    function setUserName(name) {
+      const u = currentUser();
+      u.username = name;
+      localStorage.setItem('chat_user', JSON.stringify(u));
+      db.ref(`${PRESENCE_ROOT}/${u.uid}`).update({ username: name, isAdmin: (name === 'Kyson') }).catch(()=>{});
+      updateAdminUI();
+    }
+
+    // helper: currentUser (duplicate safe)
     function currentUser() {
       const stored = localStorage.getItem('chat_user');
       if (stored) return JSON.parse(stored);
@@ -571,16 +564,8 @@
       return user;
     }
 
-    // Optional: clicking a member who is yourself opens nothing; prevent actions on self
-    // (Handled by modal actions: admin can still kick/ban themselves if they want.)
-
-    // Expose a small console helper for testing:
-    window.__chatHelpers = {
-      currentUser,
-      isAdminLocal,
-      isBannedLocal,
-      showBanner
-    };
+    // small console helpers
+    window.__chatHelpers = { currentUser, isAdminLocal, isBannedLocal, isKickedThisSession, showBanner };
   </script>
 </body>
 </html>
