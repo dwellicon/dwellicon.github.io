@@ -1,37 +1,67 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link href="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6988140a72df0cde2be5a4fe/3238a9456_logo.png" rel="icon" type="image/svg+xml" />
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <link href="https://aether-learn-solve.base44.app/manifest.json" rel="manifest" />
-    <title>
-      Aether
-    </title>
-    <script crossorigin="" src="https://aether-learn-solve.base44.app/assets/index-ZWR9A8TM.js" type="module">
-    </script>
-    <link crossorigin="" href="https://aether-learn-solve.base44.app/assets/index-BWMnWMSG.css" rel="stylesheet" />
-    <meta content="Aether" property="og:title" />
-    <meta content="Unlock the mysteries of math and science. Aether breaks down complex concepts into simple, step-by-step explanations, complete with helpful visuals, making learning accessible and engaging for everyone." property="og:description" />
-    <meta content="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/render/image/public/base44-prod/public/6988140a72df0cde2be5a4fe/3238a9456_logo.png?width=1200&amp;height=630&amp;resize=contain" property="og:image" />
-    <meta content="https://aether-learn-solve.base44.app" property="og:url" />
-    <meta content="website" property="og:type" />
-    <meta content="Aether" property="og:site_name" />
-    <meta content="summary_large_image" name="twitter:card" />
-    <meta content="Aether" name="twitter:title" />
-    <meta content="Unlock the mysteries of math and science. Aether breaks down complex concepts into simple, step-by-step explanations, complete with helpful visuals, making learning accessible and engaging for everyone." name="twitter:description" />
-    <meta content="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/render/image/public/base44-prod/public/6988140a72df0cde2be5a4fe/3238a9456_logo.png?width=1200&amp;height=630&amp;resize=contain" name="twitter:image" />
-    <meta content="https://aether-learn-solve.base44.app" name="twitter:url" />
-    <meta content="Unlock the mysteries of math and science. Aether breaks down complex concepts into simple, step-by-step explanations, complete with helpful visuals, making learning accessible and engaging for everyone." name="description" />
-    <meta content="yes" name="mobile-web-app-capable" />
-    <meta content="black" name="apple-mobile-web-app-status-bar-style" />
-    <meta content="Aether" name="apple-mobile-web-app-title" />
-    <link href="https://aether-learn-solve.base44.app" rel="canonical" />
-    <script async="true" data-app-id="6988140a72df0cde2be5a4fe" data-platform-url="https://app.base44.com" src="/static/js/badge.js">
-    </script>
-  </head>
-  <body>
-    <div id="root">
-    </div>
-  </body>
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Simple Firebase Chat</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width:700px; margin:40px auto; }
+    #chat { border:1px solid #ddd; height:300px; overflow:auto; padding:10px; background:#fafafa; }
+    .msg { margin:6px 0; padding:6px 8px; border-radius:6px; background:#fff; box-shadow:0 1px 0 rgba(0,0,0,0.04); }
+    #controls { margin-top:10px; display:flex; gap:8px; }
+    input[type=text] { flex:1; padding:8px; }
+  </style>
+</head>
+<body>
+
+<h2>Live Chat</h2>
+<div id="chat"></div>
+
+<div id="controls">
+  <input id="name" type="text" placeholder="Your name" value="Guest">
+  <input id="msg" type="text" placeholder="Type a message">
+  <button id="send">Send</button>
+</div>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+  // Replace with your Firebase config
+  const firebaseConfig = {
+    /* YOUR FIREBASE CONFIG */
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database().ref('messages');
+
+  const chat = document.getElementById('chat');
+  const nameInput = document.getElementById('name');
+  const msgInput = document.getElementById('msg');
+  const sendBtn = document.getElementById('send');
+
+  // Listen for new messages
+  db.limitToLast(100).on('child_added', snap => {
+    const data = snap.val();
+    const el = document.createElement('div');
+    el.className = 'msg';
+    el.textContent = `${data.name}: ${data.text}`;
+    chat.appendChild(el);
+    chat.scrollTop = chat.scrollHeight;
+  });
+
+  // Send message
+  sendBtn.onclick = () => {
+    const text = msgInput.value.trim();
+    const name = nameInput.value.trim() || 'Guest';
+    if (!text) return;
+    db.push({ name, text, ts: Date.now() });
+    msgInput.value = '';
+  };
+
+  // Optional: send on Enter
+  msgInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendBtn.click(); });
+</script>
+
+</body>
 </html>
