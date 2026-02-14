@@ -11,13 +11,12 @@
       --muted:#7b8794;
       --accent:#4f46e5;
       --admin-yellow:#f59e0b;
-      --you:#e9f0ff;
       --shadow: 0 8px 30px rgba(20,30,60,0.06);
     }
     html,body{height:100%;margin:0;background:linear-gradient(180deg,#eef6ff 0%,var(--bg) 100%);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;color:#0f1724}
     .app { display:flex; height:100vh; overflow:hidden; }
 
-    /* Servers column (left) - Discord style vertical circles */
+    /* Servers column (left) */
     .servers-column {
       width:72px; min-width:72px;
       background:#0f1724; color:white;
@@ -314,7 +313,6 @@
     const createServerError = document.getElementById('createServerError');
 
     const publicJoinList = document.getElementById('publicJoinList');
-    const joinList = document.getElementById('joinList');
     const joinClose = document.getElementById('joinClose');
     const joinError = document.getElementById('joinError');
     const joinServerName = document.getElementById('joinServerName');
@@ -348,7 +346,6 @@
 
     const banlandModal = document.getElementById('banlandModal');
     const banListEl = document.getElementById('banList');
-    const banlandBtn = document.getElementById('banlandBtn');
     const closeBanland = document.getElementById('closeBanland');
 
     const kickedScreen = document.getElementById('kickedScreen');
@@ -359,7 +356,7 @@
     // DB paths
     const PRESENCE_ROOT = 'presence';
     const SERVERS_ROOT = 'servers';
-    const MESSAGES_ROOT = 'messages'; // messages/{serverId}/{messageId}
+    const MESSAGES_ROOT = 'messages';
     const KICKS_ROOT = 'kicks';
     const BANS_ROOT = 'bans';
 
@@ -426,7 +423,6 @@
       if (!arr.includes(serverId)) {
         arr.push(serverId);
         localStorage.setItem('joined_servers', JSON.stringify(arr));
-        // refresh UI so the newly-joined private server appears in the left list
         refreshServersUI();
       }
     }
@@ -436,21 +432,13 @@
       if (idx !== -1) {
         arr.splice(idx,1);
         localStorage.setItem('joined_servers', JSON.stringify(arr));
-        // refresh UI so the left list updates immediately
         refreshServersUI();
       }
     }
     function hasJoinedServer(serverId) {
-      if (isAdminLocal()) return true; // admins always allowed
+      if (isAdminLocal()) return true;
       const arr = getJoinedServers();
       return arr.includes(serverId);
-    }
-
-    // refresh servers UI helper (reads DB and re-renders)
-    function refreshServersUI() {
-      db.ref(SERVERS_ROOT).once('value').then(snap => {
-        renderServers(snap.val() || {});
-      }).catch(()=>{});
     }
 
     // presence
@@ -482,7 +470,6 @@
               break;
             }
           }
-          // if none found, create default
           if (!currentServerId) createDefaultServerIfMissing();
         }
         refreshPublicJoinList(val);
@@ -502,9 +489,9 @@
       const entries = Object.entries(obj || {});
       entries.sort((a,b) => (a[1].createdAt || 0) - (b[1].createdAt || 0));
       entries.forEach(([id, info]) => {
-        // filter: private servers are only shown if user joined them, or created them, or is admin
+        // show server if public OR user joined it OR user created it OR admin
         if (info.isPrivate && !hasJoinedServer(id) && info.createdBy !== currentUser().uid && !isAdminLocal()) {
-          return; // skip rendering this private server
+          return;
         }
 
         const wrap = document.createElement('div');
@@ -522,7 +509,6 @@
 
         el.addEventListener('click', () => selectServer(id));
 
-        // custom context menu on right-click
         el.addEventListener('contextmenu', (ev) => {
           ev.preventDefault();
           lastContextServerId = id;
@@ -547,7 +533,7 @@
       serverContextMenu.style.display = 'block';
       serverContextMenu.setAttribute('aria-hidden','false');
 
-      // If user is admin, show Delete option
+      // Admin: Delete
       if (isAdminLocal()) {
         const delBtn = document.createElement('button');
         delBtn.textContent = 'Delete Server';
@@ -559,13 +545,12 @@
           await db.ref(`${MESSAGES_ROOT}/${serverId}`).remove().catch(()=>{});
           showBanner('Server deleted');
           if (currentServerId === serverId) currentServerId = null;
-          // refresh UI after deletion
           refreshServersUI();
         });
         serverContextMenu.appendChild(delBtn);
       }
 
-      // If server is private and user has joined, show Leave option (not for creator)
+      // Leave for joined private servers (not creator)
       if (info.isPrivate && hasJoinedServer(serverId) && info.createdBy !== currentUser().uid) {
         const leaveBtn = document.createElement('button');
         leaveBtn.textContent = 'Leave Server';
@@ -595,7 +580,7 @@
         serverContextMenu.appendChild(leaveBtn);
       }
 
-      // If user created the private server, show owner note
+      // Owner note
       if (info.isPrivate && info.createdBy === currentUser().uid) {
         const ownerNote = document.createElement('button');
         ownerNote.textContent = 'You are owner';
@@ -611,8 +596,7 @@
       }
     }
 
-    // hide context menu on click elsewhere
-    document.addEventListener('click', (e) => {
+    document.addEventListener('click', () => {
       if (serverContextMenu.style.display === 'block') {
         serverContextMenu.style.display = 'none';
         serverContextMenu.setAttribute('aria-hidden','true');
@@ -630,7 +614,6 @@
       if (!id) return;
       if (currentServerId === id) return;
 
-      // fetch server info to check privacy
       let info = null;
       try {
         const snap = await db.ref(`${SERVERS_ROOT}/${id}`).once('value');
@@ -641,7 +624,6 @@
         return;
       }
 
-      // If server is private and user hasn't joined it yet, require password (unless admin or creator)
       if (info.isPrivate && !hasJoinedServer(id) && info.createdBy !== currentUser().uid) {
         if (isAdminLocal()) {
           markJoinedServer(id);
@@ -674,7 +656,6 @@
     tabCreate.addEventListener('click', () => { tabCreate.classList.add('active'); tabJoin.classList.remove('active'); createPane.style.display='block'; joinPane.style.display='none'; });
     tabJoin.addEventListener('click', () => { tabJoin.classList.add('active'); tabCreate.classList.remove('active'); createPane.style.display='none'; joinPane.style.display='block'; refreshPublicJoinList(); });
 
-    // show modal (plus button)
     createServerBtn.addEventListener('click', () => {
       createServerError.style.display = 'none';
       joinError.style.display = 'none';
@@ -683,162 +664,6 @@
       newServerName.focus();
     });
 
-    // Create server: show/hide password row
-    document.querySelectorAll('input[name="serverType"]').forEach(r => r.addEventListener('change', (e) => {
-      privatePasswordRow.style.display = (e.target.value === 'private') ? 'block' : 'none';
-    }));
-
-    createServerCancel.addEventListener('click', () => createJoinModal.style.display = 'none');
-
-    createServerSubmit.addEventListener('click', async () => {
-      createServerError.style.display = 'none';
-      const name = (newServerName.value || '').trim();
-      const type = document.querySelector('input[name="serverType"]:checked')?.value || 'public';
-      const isPrivate = (type === 'private');
-      const password = (newServerPassword.value || '').trim();
-
-      if (!name) { createServerError.textContent = 'Enter a server name'; createServerError.style.display = 'block'; return; }
-      if (isPrivate && !password) { createServerError.textContent = 'Enter a password for private server'; createServerError.style.display = 'block'; return; }
-      if (!isAdminLocal()) { createServerError.textContent = 'Admins only'; createServerError.style.display      serverContextMenu.style.display = 'block';
-      serverContextMenu.setAttribute('aria-hidden','false');
-
-      // If user is admin, show Delete option
-      if (isAdminLocal()) {
-        const delBtn = document.createElement('button');
-        delBtn.textContent = 'Delete Server';
-        delBtn.addEventListener('click', async () => {
-          serverContextMenu.style.display = 'none';
-          const confirmDelete = confirm(`Delete server "${info.name}"? This removes its messages and cannot be undone.`);
-          if (!confirmDelete) return;
-          await db.ref(`${SERVERS_ROOT}/${serverId}`).remove().catch(()=>{});
-          await db.ref(`${MESSAGES_ROOT}/${serverId}`).remove().catch(()=>{});
-          showBanner('Server deleted');
-          if (currentServerId === serverId) currentServerId = null;
-          // refresh UI after deletion
-          refreshServersUI();
-        });
-        serverContextMenu.appendChild(delBtn);
-      }
-
-      // If server is private and user has joined, show Leave option (not for creator)
-      if (info.isPrivate && hasJoinedServer(serverId) && info.createdBy !== currentUser().uid) {
-        const leaveBtn = document.createElement('button');
-        leaveBtn.textContent = 'Leave Server';
-        leaveBtn.addEventListener('click', () => {
-          serverContextMenu.style.display = 'none';
-          const ok = confirm(`Leave private server "${info.name}"? You will need the password to rejoin.`);
-          if (!ok) return;
-          unmarkJoinedServer(serverId);
-          showBanner('Left server');
-          if (currentServerId === serverId) {
-            currentServerId = null;
-            db.ref(SERVERS_ROOT).once('value').then(snap => {
-              const servers = snap.val() || {};
-              for (let k in servers) {
-                const s = servers[k];
-                if (!s.isPrivate || hasJoinedServer(k) || s.createdBy === currentUser().uid || isAdminLocal()) {
-                  selectServer(k);
-                  return;
-                }
-              }
-              chatEl.innerHTML = '';
-              document.getElementById('currentServerTitle').textContent = 'No server';
-              document.getElementById('currentServerSubtitle').textContent = '';
-            }).catch(()=>{});
-          }
-        });
-        serverContextMenu.appendChild(leaveBtn);
-      }
-
-      // If user created the private server, show owner note
-      if (info.isPrivate && info.createdBy === currentUser().uid) {
-        const ownerNote = document.createElement('button');
-        ownerNote.textContent = 'You are owner';
-        ownerNote.disabled = true;
-        serverContextMenu.appendChild(ownerNote);
-      }
-
-      if (serverContextMenu.children.length === 0) {
-        const closeBtn = document.createElement('button');
-        closeBtn.textContent = 'Close';
-        closeBtn.addEventListener('click', () => { serverContextMenu.style.display = 'none'; });
-        serverContextMenu.appendChild(closeBtn);
-      }
-    }
-
-    // hide context menu on click elsewhere
-    document.addEventListener('click', (e) => {
-      if (serverContextMenu.style.display === 'block') {
-        serverContextMenu.style.display = 'none';
-        serverContextMenu.setAttribute('aria-hidden','true');
-      }
-    });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        serverContextMenu.style.display = 'none';
-        serverContextMenu.setAttribute('aria-hidden','true');
-      }
-    });
-
-    // Select server with private-check and local join memory
-    async function selectServer(id) {
-      if (!id) return;
-      if (currentServerId === id) return;
-
-      // fetch server info to check privacy
-      let info = null;
-      try {
-        const snap = await db.ref(`${SERVERS_ROOT}/${id}`).once('value');
-        info = snap.val() || {};
-      } catch (err) {
-        console.error('Failed to read server info', err);
-        showBanner('Failed to select server');
-        return;
-      }
-
-      // If server is private and user hasn't joined it yet, require password (unless admin or creator)
-      if (info.isPrivate && !hasJoinedServer(id) && info.createdBy !== currentUser().uid) {
-        if (isAdminLocal()) {
-          markJoinedServer(id);
-        } else {
-          const pw = prompt(`Server "${info.name || id}" is private. Enter password to join:`);
-          if (pw === null) return;
-          if (pw !== (info.password || '')) {
-            showBanner('Incorrect server password');
-            return;
-          }
-          markJoinedServer(id);
-        }
-      }
-
-      if (messagesRef) messagesRef.off();
-
-      currentServerId = id;
-
-      try {
-        document.getElementById('currentServerTitle').textContent = 'Server: ' + (info.name || id);
-        document.getElementById('currentServerSubtitle').textContent = info.isPrivate ? 'Private server' : 'Public server';
-      } catch (e) {}
-
-      document.querySelectorAll('.server').forEach(s => s.classList.toggle('active', s.dataset.serverId === id));
-
-      startMessagesForServer(id);
-    }
-
-    // create/join modal UI
-    tabCreate.addEventListener('click', () => { tabCreate.classList.add('active'); tabJoin.classList.remove('active'); createPane.style.display='block'; joinPane.style.display='none'; });
-    tabJoin.addEventListener('click', () => { tabJoin.classList.add('active'); tabCreate.classList.remove('active'); createPane.style.display='none'; joinPane.style.display='block'; refreshPublicJoinList(); });
-
-    // show modal (plus button)
-    createServerBtn.addEventListener('click', () => {
-      createServerError.style.display = 'none';
-      joinError.style.display = 'none';
-      tabCreate.click();
-      createJoinModal.style.display = 'flex';
-      newServerName.focus();
-    });
-
-    // Create server: show/hide password row
     document.querySelectorAll('input[name="serverType"]').forEach(r => r.addEventListener('change', (e) => {
       privatePasswordRow.style.display = (e.target.value === 'private') ? 'block' : 'none';
     }));
@@ -869,7 +694,6 @@
         if (isPrivate) markJoinedServer(id);
         createJoinModal.style.display = 'none';
         showBanner('Server created');
-        // refresh servers so creator sees it immediately
         refreshServersUI();
         selectServer(id);
       } catch (err) {
@@ -890,7 +714,7 @@
       const entries = Object.entries(servers);
       entries.sort((a,b) => (a[1].createdAt||0) - (b[1].createdAt||0));
       entries.forEach(([id, info]) => {
-        if (info.isPrivate) return; // do not list private servers
+        if (info.isPrivate) return;
         const row = document.createElement('div');
         row.className = 'server-row';
         const left = document.createElement('div');
@@ -933,7 +757,6 @@
           joinError.style.display = 'block';
           return;
         }
-        // find matching server (name exact). There may be multiple; pick first that is private.
         const entries = Object.entries(val);
         let matched = null;
         for (const [id, info] of entries) {
@@ -951,7 +774,6 @@
           return;
         }
         markJoinedServer(id);
-        // ensure UI updates so server appears in left list
         refreshServersUI();
         selectServer(id);
         createJoinModal.style.display = 'none';
@@ -1014,7 +836,7 @@
       chatEl.scrollTop = chatEl.scrollHeight;
     }
 
-    // send message (to current server)
+    // send message
     sendBtn.addEventListener('click', sendMessage);
     msgInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
 
@@ -1035,11 +857,9 @@
       });
     }
 
-    // members list (presence)
-    let presenceListener = null;
+    // members list
     function startMembersListener() {
       const ref = db.ref(PRESENCE_ROOT);
-      presenceListener = ref;
       ref.on('value', snap => {
         const val = snap.val() || {};
         renderMembers(val);
@@ -1097,7 +917,7 @@
       return h + 'h';
     }
 
-    // member modal actions (kick/ban)
+    // member modal actions
     let modalTargetUid = null;
     function openMemberModal(uid, info) {
       modalTargetUid = uid;
@@ -1120,7 +940,7 @@
       const u = currentUser();
       if (!isAdminLocal()) { showBanner('Admin only'); return; }
       try {
-        const ttl = 30_000; // 30 seconds
+        const ttl = 30_000;
         await db.ref(`${KICKS_ROOT}/${modalTargetUid}`).set({ ts: now(), by: u.uid, byName: u.username, ttl });
         showBanner('Kick sent (30s)');
       } catch (err) {
@@ -1213,7 +1033,6 @@
     function isBannedLocal() { return !!localStorage.getItem(`banned_${currentUser().uid}`); }
 
     // Banland
-    banlandBtn?.addEventListener('click', openBanland);
     closeBanland.addEventListener('click', ()=> banlandModal.style.display = 'none');
 
     async function openBanland() {
@@ -1276,7 +1095,6 @@
         updateAdminUI();
         adminModal.style.display = 'none';
         showBanner('Logged in as admin');
-        // refresh servers so admin sees private servers immediately
         refreshServersUI();
       } else {
         adminError.textContent = 'Invalid credentials';
@@ -1284,7 +1102,6 @@
       }
     });
 
-    // Admin logout
     adminLogoutBtn.addEventListener('click', () => {
       const me = currentUser();
       me.isAdmin = false;
@@ -1293,9 +1110,15 @@
       db.ref(`${PRESENCE_ROOT}/${me.uid}`).update({ isAdmin: false }).catch(()=>{});
       updateAdminUI();
       showBanner('Admin logged out');
-      // refresh servers so private servers hide if needed
       refreshServersUI();
     });
+
+    // refresh servers UI helper
+    function refreshServersUI() {
+      db.ref(SERVERS_ROOT).once('value').then(snap => {
+        renderServers(snap.val() || {});
+      }).catch(()=>{});
+    }
 
     // init
     (function init() {
