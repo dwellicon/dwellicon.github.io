@@ -90,7 +90,7 @@
       box-shadow: 0 8px 30px rgba(10,20,40,0.2);
       padding: 8px;
       display: none;
-      min-width: 140px;
+      min-width: 160px;
       font-size: 14px;
       color: #0f1724;
     }
@@ -198,12 +198,20 @@
       <!-- Join -->
       <div id="joinPane" style="display:none">
         <h3>Join Server</h3>
-        <div style="margin-top:8px" class="muted">Pick a server to join. Private servers require a password and are not listed publicly.</div>
-        <div id="joinList" style="margin-top:12px;max-height:260px;overflow:auto;border:1px solid #eef2f7;border-radius:8px;padding:6px"></div>
-        <div class="row" style="margin-top:12px">
-          <button id="joinClose" class="btn" style="background:#e5e7eb">Close</button>
+        <div style="margin-top:8px" class="muted">Public servers are listed below. Private servers are not listed — to join a private server, enter its exact name and password in the form.</div>
+
+        <div style="margin-top:12px;max-height:180px;overflow:auto;border:1px solid #eef2f7;border-radius:8px;padding:6px" id="publicJoinList"></div>
+
+        <div style="margin-top:12px;border-top:1px dashed #eef2f7;padding-top:12px">
+          <div style="font-weight:600;margin-bottom:6px">Join private server</div>
+          <input id="joinServerName" type="text" placeholder="Server name (exact)" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7;margin-bottom:8px">
+          <input id="joinServerPassword" type="password" placeholder="Password" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7;margin-bottom:8px">
+          <div style="display:flex;gap:8px">
+            <button id="joinPrivateSubmit" class="btn" style="background:#4f46e5;color:#fff">Join Private</button>
+            <button id="joinClose" class="btn" style="background:#e5e7eb">Close</button>
+          </div>
+          <div id="joinError" class="muted" style="color:#b00020;margin-top:8px;display:none"></div>
         </div>
-        <div id="joinError" class="muted" style="color:#b00020;margin-top:8px;display:none"></div>
       </div>
     </div>
   </div>
@@ -270,9 +278,7 @@
   <div id="banner" class="banner"></div>
 
   <!-- server context menu -->
-  <div id="serverContextMenu" role="menu" aria-hidden="true">
-    <!-- buttons are injected dynamically -->
-  </div>
+  <div id="serverContextMenu" role="menu" aria-hidden="true"></div>
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -307,9 +313,13 @@
     const createServerCancel = document.getElementById('createServerCancel');
     const createServerError = document.getElementById('createServerError');
 
+    const publicJoinList = document.getElementById('publicJoinList');
     const joinList = document.getElementById('joinList');
     const joinClose = document.getElementById('joinClose');
     const joinError = document.getElementById('joinError');
+    const joinServerName = document.getElementById('joinServerName');
+    const joinServerPassword = document.getElementById('joinServerPassword');
+    const joinPrivateSubmit = document.getElementById('joinPrivateSubmit');
 
     const chatEl = document.getElementById('chat');
     const msgInput = document.getElementById('msg');
@@ -464,6 +474,7 @@
           // if none found, create default
           if (!currentServerId) createDefaultServerIfMissing();
         }
+        refreshPublicJoinList(val);
       }, err => console.error('servers listen error', err));
     }
 
@@ -536,13 +547,12 @@
           await db.ref(`${SERVERS_ROOT}/${serverId}`).remove().catch(()=>{});
           await db.ref(`${MESSAGES_ROOT}/${serverId}`).remove().catch(()=>{});
           showBanner('Server deleted');
-          // if deleted server was current, clear selection
           if (currentServerId === serverId) currentServerId = null;
         });
         serverContextMenu.appendChild(delBtn);
       }
 
-      // If server is private and user has joined, show Leave option
+      // If server is private and user has joined, show Leave option (not for creator)
       if (info.isPrivate && hasJoinedServer(serverId) && info.createdBy !== currentUser().uid) {
         const leaveBtn = document.createElement('button');
         leaveBtn.textContent = 'Leave Server';
@@ -552,10 +562,8 @@
           if (!ok) return;
           unmarkJoinedServer(serverId);
           showBanner('Left server');
-          // if currently viewing it, switch to a public or joined server
           if (currentServerId === serverId) {
             currentServerId = null;
-            // try to select another visible server
             db.ref(SERVERS_ROOT).once('value').then(snap => {
               const servers = snap.val() || {};
               for (let k in servers) {
@@ -565,7 +573,6 @@
                   return;
                 }
               }
-              // none found: clear chat
               chatEl.innerHTML = '';
               document.getElementById('currentServerTitle').textContent = 'No server';
               document.getElementById('currentServerSubtitle').textContent = '';
@@ -575,7 +582,7 @@
         serverContextMenu.appendChild(leaveBtn);
       }
 
-      // If user created the private server, allow Leave (but creator remains joined)
+      // If user created the private server, show owner note
       if (info.isPrivate && info.createdBy === currentUser().uid) {
         const ownerNote = document.createElement('button');
         ownerNote.textContent = 'You are owner';
@@ -583,7 +590,6 @@
         serverContextMenu.appendChild(ownerNote);
       }
 
-      // If no options were added, show a simple Close
       if (serverContextMenu.children.length === 0) {
         const closeBtn = document.createElement('button');
         closeBtn.textContent = 'Close';
@@ -599,7 +605,6 @@
         serverContextMenu.setAttribute('aria-hidden','true');
       }
     });
-    // hide on escape
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         serverContextMenu.style.display = 'none';
@@ -626,47 +631,40 @@
       // If server is private and user hasn't joined it yet, require password (unless admin or creator)
       if (info.isPrivate && !hasJoinedServer(id) && info.createdBy !== currentUser().uid) {
         if (isAdminLocal()) {
-          // admin bypasses password
           markJoinedServer(id);
         } else {
           const pw = prompt(`Server "${info.name || id}" is private. Enter password to join:`);
-          if (pw === null) return; // user cancelled
+          if (pw === null) return;
           if (pw !== (info.password || '')) {
             showBanner('Incorrect server password');
             return;
           }
-          // correct password: remember join locally
           markJoinedServer(id);
         }
       }
 
-      // detach previous messages listener
       if (messagesRef) messagesRef.off();
 
       currentServerId = id;
 
-      // update title and subtitle
       try {
         document.getElementById('currentServerTitle').textContent = 'Server: ' + (info.name || id);
         document.getElementById('currentServerSubtitle').textContent = info.isPrivate ? 'Private server' : 'Public server';
       } catch (e) {}
 
-      // update active class
       document.querySelectorAll('.server').forEach(s => s.classList.toggle('active', s.dataset.serverId === id));
 
-      // start listening messages for this server
       startMessagesForServer(id);
     }
 
     // create/join modal UI
     tabCreate.addEventListener('click', () => { tabCreate.classList.add('active'); tabJoin.classList.remove('active'); createPane.style.display='block'; joinPane.style.display='none'; });
-    tabJoin.addEventListener('click', () => { tabJoin.classList.add('active'); tabCreate.classList.remove('active'); createPane.style.display='none'; joinPane.style.display='block'; refreshJoinList(); });
+    tabJoin.addEventListener('click', () => { tabJoin.classList.add('active'); tabCreate.classList.remove('active'); createPane.style.display='none'; joinPane.style.display='block'; refreshPublicJoinList(); });
 
     // show modal (plus button)
     createServerBtn.addEventListener('click', () => {
       createServerError.style.display = 'none';
       joinError.style.display = 'none';
-      // default to Create tab
       tabCreate.click();
       createJoinModal.style.display = 'flex';
       newServerName.focus();
@@ -700,7 +698,6 @@
           isPrivate: !!isPrivate,
           password: isPrivate ? password : null
         });
-        // mark creator as joined automatically
         if (isPrivate) markJoinedServer(id);
         createJoinModal.style.display = 'none';
         showBanner('Server created');
@@ -712,22 +709,18 @@
       }
     });
 
-    // Join pane: list servers and allow join
-    async function refreshJoinList() {
-      joinList.innerHTML = '';
-      joinError.style.display = 'none';
-      const snap = await db.ref(SERVERS_ROOT).once('value');
-      const servers = snap.val() || {};
-      const entries = Object.entries(servers);
-      if (entries.length === 0) {
-        joinList.textContent = 'No servers available';
-        return;
+    // Refresh public join list (public servers only)
+    async function refreshPublicJoinList(snapshotVal) {
+      publicJoinList.innerHTML = '';
+      let servers = snapshotVal;
+      if (!servers) {
+        const snap = await db.ref(SERVERS_ROOT).once('value');
+        servers = snap.val() || {};
       }
+      const entries = Object.entries(servers);
       entries.sort((a,b) => (a[1].createdAt||0) - (b[1].createdAt||0));
       entries.forEach(([id, info]) => {
-        // For join list: show public servers only. Private servers are NOT listed (per request).
-        if (info.isPrivate) return;
-
+        if (info.isPrivate) return; // do not list private servers
         const row = document.createElement('div');
         row.className = 'server-row';
         const left = document.createElement('div');
@@ -743,7 +736,7 @@
         btn.textContent = 'Join';
         btn.style.background = '#4f46e5';
         btn.style.color = '#fff';
-        btn.addEventListener('click', async () => {
+        btn.addEventListener('click', () => {
           selectServer(id);
           createJoinModal.style.display = 'none';
           showBanner('Joined server');
@@ -751,17 +744,54 @@
         right.appendChild(btn);
         row.appendChild(left);
         row.appendChild(right);
-        joinList.appendChild(row);
+        publicJoinList.appendChild(row);
       });
-
-      // Inform user how to join private servers
-      const note = document.createElement('div');
-      note.style.marginTop = '8px';
-      note.style.fontSize = '13px';
-      note.style.color = 'var(--muted)';
-      note.textContent = 'Private servers are not listed. To join a private server, use the server name and password via the Join flow (enter server name and password).';
-      joinList.parentNode.insertBefore(note, joinList.nextSibling);
     }
+
+    // Join private by name & password
+    joinPrivateSubmit.addEventListener('click', async () => {
+      joinError.style.display = 'none';
+      const name = (joinServerName.value || '').trim();
+      const pw = (joinServerPassword.value || '').trim();
+      if (!name || !pw) { joinError.textContent = 'Enter server name and password'; joinError.style.display = 'block'; return; }
+
+      try {
+        const snap = await db.ref(SERVERS_ROOT).orderByChild('name').equalTo(name).once('value');
+        const val = snap.val();
+        if (!val) {
+          joinError.textContent = 'Server not found';
+          joinError.style.display = 'block';
+          return;
+        }
+        // find matching server (name exact). There may be multiple; pick first that is private.
+        const entries = Object.entries(val);
+        let matched = null;
+        for (const [id, info] of entries) {
+          if (info.isPrivate) { matched = { id, info }; break; }
+        }
+        if (!matched) {
+          joinError.textContent = 'No private server with that name';
+          joinError.style.display = 'block';
+          return;
+        }
+        const { id, info } = matched;
+        if (pw !== (info.password || '')) {
+          joinError.textContent = 'Incorrect password';
+          joinError.style.display = 'block';
+          return;
+        }
+        markJoinedServer(id);
+        selectServer(id);
+        createJoinModal.style.display = 'none';
+        joinServerName.value = '';
+        joinServerPassword.value = '';
+        showBanner('Joined private server');
+      } catch (err) {
+        console.error('join private error', err);
+        joinError.textContent = 'Join failed';
+        joinError.style.display = 'block';
+      }
+    });
 
     joinClose.addEventListener('click', () => createJoinModal.style.display = 'none');
 
@@ -1153,7 +1183,7 @@
     banlandModal.addEventListener('click', (ev) => { if (ev.target === banlandModal) banlandModal.style.display = 'none'; });
 
     // expose helpers for debugging
-    window.__chatHelpers = { currentUser, isAdminLocal, isBannedLocal, isKickedThisSession, showBanner, selectServer, refreshJoinList, getJoinedServers };
+    window.__chatHelpers = { currentUser, isAdminLocal, isBannedLocal, isKickedThisSession, showBanner, selectServer, refreshPublicJoinList, getJoinedServers };
   </script>
 </body>
 </html>
