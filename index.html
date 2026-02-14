@@ -356,6 +356,8 @@
       measurementId: "G-GP1YBL86RB"
     };
     firebase.initializeApp(firebaseConfig);
+    firebase.auth().signInAnonymously();
+    
     const db = firebase.database();
 
     // DOM refs
