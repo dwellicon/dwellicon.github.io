@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>Simple Firebase Chat</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
     body { font-family: Arial, sans-serif; max-width:700px; margin:40px auto; }
     #chat { border:1px solid #ddd; height:300px; overflow:auto; padding:10px; background:#fafafa; }
@@ -10,16 +11,17 @@
     #controls { margin-top:10px; display:flex; gap:8px; }
     input[type=text] { flex:1; padding:8px; }
     #status { margin-top:8px; color:#666; font-size:13px; }
+    .error { color:#b00020; }
   </style>
 </head>
 <body>
 
 <h2>Live Chat</h2>
-<div id="chat"></div>
+<div id="chat" aria-live="polite"></div>
 
 <div id="controls">
-  <input id="name" type="text" placeholder="Your name" value="Guest">
-  <input id="msg" type="text" placeholder="Type a message">
+  <input id="name" type="text" placeholder="Your name" value="Guest" aria-label="Your name">
+  <input id="msg" type="text" placeholder="Type a message" aria-label="Message">
   <button id="send">Send</button>
 </div>
 
@@ -30,99 +32,144 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
-  // Paste the exact firebaseConfig object from Firebase Console here
-  const firebaseConfig = {
-    apiKey: "AIzaSyAulcwmA2r2Z0Wv5mxyuWwQvPv05E8HvMU",
-    authDomain: "dwellicon-42e72.firebaseapp.com",
-    databaseURL: "https://dwellicon-42e72-default-rtdb.firebaseio.com",
-    projectId: "dwellicon-42e72",
-    storageBucket: "dwellicon-42e72.appspot.com",
-    messagingSenderId: "634657717896",
-    appId: "1:634657717896:web:27f246614fdb2c2398a93d",
-    measurementId: "G-GP1YBL86RB"
-  };
+/* ====== CONFIG: paste the exact Web app config from Firebase Console here ====== */
+const firebaseConfig = {
+  apiKey: "AIzaSyAulcwmA2r2Z0Wv5mxyuWwQvPv05E8HvMU",
+  authDomain: "dwellicon-42e72.firebaseapp.com",
+  databaseURL: "https://dwellicon-42e72-default-rtdb.firebaseio.com",
+  projectId: "dwellicon-42e72",
+  storageBucket: "dwellicon-42e72.appspot.com",
+  messagingSenderId: "634657717896",
+  appId: "1:634657717896:web:27f246614fdb2c2398a93d",
+  measurementId: "G-GP1YBL86RB"
+};
+/* =========================================================================== */
 
-  // Debug: show config in console so you can verify values loaded on the page
-  console.log('firebaseConfig', firebaseConfig);
+const statusEl = document.getElementById('statustxt');
+console.log('firebaseConfig', firebaseConfig);
 
-  const statusEl = document.getElementById('statustxt');
-
-  // Basic validation before initializeApp
-  if (!firebaseConfig || !firebaseConfig.projectId) {
-    console.error('Missing firebaseConfig or projectId. Copy the Web app config from Firebase Console.');
-    statusEl.textContent = 'config missing projectId';
-  } else if (!firebaseConfig.databaseURL) {
-    console.error('Missing databaseURL in firebaseConfig. Add the Realtime Database URL from Firebase Console.');
-    statusEl.textContent = 'missing databaseURL';
-  } else {
-    try {
-      firebase.initializeApp(firebaseConfig);
-      statusEl.textContent = 'initialized';
-    } catch (err) {
-      console.error('firebase.initializeApp error', err);
-      statusEl.textContent = 'init error';
-    }
-  }
-
-  // If initialization succeeded, wire up database
-  let dbRef = null;
+// Basic validation
+if (!firebaseConfig || !firebaseConfig.projectId) {
+  console.error('Missing firebaseConfig or projectId. Copy the Web app config from Firebase Console.');
+  statusEl.textContent = 'config missing projectId';
+  statusEl.classList.add('error');
+} else if (!firebaseConfig.databaseURL) {
+  console.error('Missing databaseURL in firebaseConfig. Add the Realtime Database URL from Firebase Console.');
+  statusEl.textContent = 'missing databaseURL';
+  statusEl.classList.add('error');
+} else {
   try {
-    if (firebase && firebase.database) {
-      dbRef = firebase.database().ref('messages');
-    } else {
-      console.error('firebase.database is not available. Check SDK scripts.');
-      statusEl.textContent = 'database SDK missing';
-    }
+    firebase.initializeApp(firebaseConfig);
+    statusEl.textContent = 'initialized';
   } catch (err) {
-    console.error('Error getting database reference', err);
-    statusEl.textContent = 'db ref error';
+    console.error('firebase.initializeApp error', err);
+    statusEl.textContent = 'init error';
+    statusEl.classList.add('error');
   }
+}
 
-  const chat = document.getElementById('chat');
-  const nameInput = document.getElementById('name');
-  const msgInput = document.getElementById('msg');
-  const sendBtn = document.getElementById('send');
+let dbRef = null;
+try {
+  if (firebase && firebase.database) {
+    dbRef = firebase.database().ref('messages');
+    console.log('dbRef created', dbRef.toString());
+  } else {
+    console.error('firebase.database is not available. Check SDK scripts.');
+    statusEl.textContent = 'database SDK missing';
+    statusEl.classList.add('error');
+  }
+} catch (err) {
+  console.error('Error getting database reference', err);
+  statusEl.textContent = 'db ref error';
+  statusEl.classList.add('error');
+}
 
-  if (dbRef) {
-    // Listen for new messages (last 100)
-    dbRef.limitToLast(100).on('child_added', snap => {
-      const data = snap.val() || {};
-      const name = data.name || 'Guest';
-      const text = data.text || '';
-      const el = document.createElement('div');
-      el.className = 'msg';
-      el.textContent = `${name}: ${text}`;
-      chat.appendChild(el);
-      chat.scrollTop = chat.scrollHeight;
-    }, err => {
-      console.error('Realtime DB listen error', err);
-      statusEl.textContent = 'listen error';
+const chat = document.getElementById('chat');
+const nameInput = document.getElementById('name');
+const msgInput = document.getElementById('msg');
+const sendBtn = document.getElementById('send');
+
+// Small sanitizer: trim, limit length, remove newlines
+function sanitize(text) {
+  return text.replace(/\r?\n|\r/g, ' ').trim().slice(0, 300);
+}
+
+// Debug: read once to confirm reads work
+if (dbRef) {
+  dbRef.limitToLast(10).once('value')
+    .then(snap => {
+      console.log('once value snapshot', snap.val());
+    })
+    .catch(err => {
+      console.error('once value error', err);
+      statusEl.textContent = 'read error';
+      statusEl.classList.add('error');
     });
-    statusEl.textContent = 'connected';
+}
+
+// Listen for new messages with error callback
+if (dbRef) {
+  dbRef.limitToLast(100).on('child_added', snap => {
+    const data = snap.val() || {};
+    const name = data.name || 'Guest';
+    const text = data.text || '';
+    const el = document.createElement('div');
+    el.className = 'msg';
+    // escape text for safety
+    el.textContent = `${name}: ${text}`;
+    chat.appendChild(el);
+    chat.scrollTop = chat.scrollHeight;
+  }, err => {
+    console.error('Realtime DB listen error', err);
+    statusEl.textContent = 'listen error';
+    statusEl.classList.add('error');
+  });
+  statusEl.textContent = 'connected';
+}
+
+// Send message with promise handling
+sendBtn.onclick = () => {
+  const raw = msgInput.value;
+  const text = sanitize(raw);
+  const name = sanitize(nameInput.value) || 'Guest';
+  if (!text) return;
+  if (!dbRef) {
+    console.error('No database reference. Message not sent.');
+    statusEl.textContent = 'not connected';
+    statusEl.classList.add('error');
+    return;
   }
 
-  // Send message
-  sendBtn.onclick = () => {
-    const text = msgInput.value.trim();
-    const name = nameInput.value.trim() || 'Guest';
-    if (!text) return;
-    if (!dbRef) {
-      console.error('No database reference. Message not sent.');
-      statusEl.textContent = 'not connected';
-      return;
-    }
-    // Minimal client-side sanitization: limit length
-    const safeText = text.slice(0, 300);
-    dbRef.push({ name, text: safeText, ts: Date.now() })
-      .then(() => { msgInput.value = ''; })
-      .catch(err => {
-        console.error('Push error', err);
-        statusEl.textContent = 'send error';
-      });
-  };
+  dbRef.push({ name, text, ts: Date.now() })
+    .then(() => {
+      msgInput.value = '';
+      statusEl.textContent = 'message sent';
+      setTimeout(() => { if (statusEl.textContent === 'message sent') statusEl.textContent = 'connected'; }, 1200);
+    })
+    .catch(err => {
+      console.error('Push error', err);
+      statusEl.textContent = 'send error';
+      statusEl.classList.add('error');
+    });
+};
 
-  // Send on Enter
-  msgInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendBtn.click(); });
+// Send on Enter
+msgInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendBtn.click(); });
+
+/* Optional: show connection state changes (helps debug network/auth issues) */
+if (firebase && firebase.database) {
+  const connectedRef = firebase.database().ref('.info/connected');
+  connectedRef.on('value', snap => {
+    const val = snap.val();
+    console.log('.info/connected', val);
+    if (val === true) {
+      if (!statusEl.classList.contains('error')) statusEl.textContent = 'connected';
+    } else {
+      statusEl.textContent = 'disconnected';
+      statusEl.classList.add('error');
+    }
+  });
+}
 </script>
 
 </body>
