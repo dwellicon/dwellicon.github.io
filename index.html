@@ -284,7 +284,8 @@
       <div style="margin-top:10px" id="modalStatus" class="muted"></div>
       <div class="row" style="margin-top:12px">
         <button id="kickBtn" class="btn danger">Kick</button>
-        <button id="banBtn" class="btn" style="background:#6b7280;color:#fff">Ban</button>
+        <button id="deleteAccountBtn" class="btn" style="background:#ef4444;color:#fff">Delete Account</button>
+        <button id="banBtn" class="btn" style="background:#6b7280;color:#fff;display:none">Ban</button>
         <button id="closeModal" class="btn" style="background:#e5e7eb">Close</button>
       </div>
     </div>
@@ -355,7 +356,7 @@
       appId: "1:634657717896:web:27f246614fdb2c2398a93d",
       measurementId: "G-GP1YBL86RB"
     };
-    firebase.initializeApp(firebaseConfig);    
+    firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
     // DOM refs
@@ -404,6 +405,7 @@
     const modalStatus = document.getElementById('modalStatus');
     const modalBio = document.getElementById('modalBio');
     const kickBtn = document.getElementById('kickBtn');
+    const deleteAccountBtn = document.getElementById('deleteAccountBtn');
     const banBtn = document.getElementById('banBtn');
     const closeModal = document.getElementById('closeModal');
 
@@ -433,6 +435,7 @@
     const MESSAGES_ROOT = 'messages';
     const KICKS_ROOT = 'kicks';
     const BANS_ROOT = 'bans';
+    const REMOVALS_ROOT = 'removedAccounts'; // new: tracks deleted accounts
 
     // Admin credentials (stored locally only)
     const ADMIN_USERNAME = 'Kyson';
@@ -443,6 +446,9 @@
     let serversRef = null;
     let messagesRef = null;
     let lastContextServerId = null;
+    let connectedRef = null;
+    let presenceRef = null;
+    let heartbeatTimer = null;
 
     // helpers
     function showBanner(text, ms = 2500) {
@@ -476,7 +482,11 @@
       saveUser(u);
       // update presence with new username and existing bio
       const bio = localStorage.getItem('bio_' + u.uid) || '';
-      db.ref(`${PRESENCE_ROOT}/${u.uid}`).update({ username: name, isAdmin: u.isAdmin, bio }).catch(()=>{});
+      if (presenceRef) {
+        presenceRef.update({ username: name, isAdmin: u.isAdmin, bio }).catch(()=>{});
+      } else {
+        db.ref(`${PRESENCE_ROOT}/${u.uid}`).update({ username: name, isAdmin: u.isAdmin, bio }).catch(()=>{});
+      }
       updateAdminUI();
       renderYouPanel();
     }
@@ -518,20 +528,37 @@
       return arr.includes(serverId);
     }
 
-    // presence
-    let presenceRef = null;
-    let heartbeatTimer = null;
+    // presence: robust approach using .info/connected and onDisconnect update
     function startPresence(uid, username, isAdmin=false) {
+      // presenceRef points to this user's presence node
       presenceRef = db.ref(`${PRESENCE_ROOT}/${uid}`);
-      const bio = localStorage.getItem('bio_' + uid) || '';
-      // set presence node (do not remove on disconnect; mark offline instead)
-      presenceRef.set({ username, online: true, lastSeen: now(), isAdmin, bio }).catch(()=>{});
-      // onDisconnect: mark offline and set lastSeen
-      presenceRef.onDisconnect().update({ online: false, lastSeen: now() }).catch(()=>{});
+      connectedRef = db.ref('.info/connected');
+
+      // ensure we have local bio
+      const localBio = localStorage.getItem('bio_' + uid) || '';
+
+      // Listen for connection state
+      connectedRef.on('value', snap => {
+        const connected = snap.val();
+        if (connected) {
+          // set online state immediately
+          presenceRef.update({ username, online: true, lastSeen: now(), isAdmin, bio: localBio }).catch(()=>{});
+          // schedule onDisconnect to mark offline and set lastSeen
+          presenceRef.onDisconnect().update({ online: false, lastSeen: now() }).catch(()=>{});
+        } else {
+          // not connected; nothing to do here
+        }
+      });
+
+      // heartbeat to keep lastSeen fresh while connected
       if (heartbeatTimer) clearInterval(heartbeatTimer);
       heartbeatTimer = setInterval(()=> {
-        db.ref(`${PRESENCE_ROOT}/${uid}`).update({ lastSeen: now(), online: true, username, isAdmin, bio: localStorage.getItem('bio_' + uid) || '' }).catch(()=>{});
+        const bioNow = localStorage.getItem('bio_' + uid) || '';
+        presenceRef.update({ lastSeen: now(), online: true, username, isAdmin, bio: bioNow }).catch(()=>{});
       }, 25000);
+
+      // listen for removal signal targeted at this UID (admin "Delete Account")
+      startRemovalListener(uid);
     }
 
     // servers
@@ -1050,7 +1077,13 @@
       });
 
       let onlineCount = 0;
+      const STALE_MS = 35000; // treat presence stale after 35s
+
       entries.forEach(([uid, info]) => {
+        // compute effective online: presence.online true AND lastSeen recent
+        const lastSeen = info.lastSeen || 0;
+        const effectiveOnline = !!info.online && (Date.now() - lastSeen < STALE_MS);
+
         const member = document.createElement('div');
         member.className = 'member';
         member.dataset.uid = uid;
@@ -1076,7 +1109,7 @@
 
         const status = document.createElement('div');
         status.className = 'status';
-        status.textContent = info.online ? 'online' : 'last seen ' + timeAgo(info.lastSeen || Date.now());
+        status.textContent = effectiveOnline ? 'online' : 'last seen ' + timeAgo(lastSeen || Date.now());
 
         infoWrap.appendChild(name);
         infoWrap.appendChild(status);
@@ -1084,9 +1117,10 @@
         member.appendChild(avatar);
         member.appendChild(infoWrap);
 
+        // clicking opens profile modal which shows bio (bio is not shown inline)
         member.addEventListener('click', () => openMemberModal(uid, info));
 
-        if (info.online) {
+        if (effectiveOnline) {
           onlineListEl.appendChild(member);
           onlineCount++;
         } else {
@@ -1108,20 +1142,22 @@
       return h + 'h';
     }
 
-    // member modal actions (kick/ban)
+    // member modal actions (kick/ban/delete)
     let modalTargetUid = null;
+    let modalTargetInfo = null;
     function openMemberModal(uid, info) {
       modalTargetUid = uid;
+      modalTargetInfo = info || {};
       modalName.textContent = info.username || uid;
       modalUid.textContent = uid;
-      modalStatus.textContent = info.online ? 'online' : 'offline';
+      modalStatus.textContent = (info.online && (Date.now() - (info.lastSeen||0) < 35000)) ? 'online' : 'offline';
       modalBio.textContent = info.bio || 'No bio';
       if (isAdminLocal()) {
         kickBtn.style.display = 'inline-block';
-        banBtn.style.display = 'inline-block';
+        deleteAccountBtn.style.display = 'inline-block';
       } else {
         kickBtn.style.display = 'none';
-        banBtn.style.display = 'none';
+        deleteAccountBtn.style.display = 'none';
       }
       memberModal.style.display = 'flex';
     }
@@ -1138,6 +1174,41 @@
       } catch (err) {
         console.error('kick error', err);
         showBanner('Kick failed');
+      }
+      memberModal.style.display = 'none';
+    });
+
+    // New: Delete Account (admin-only). This removes presence and related nodes and signals the client to reset.
+    deleteAccountBtn.addEventListener('click', async () => {
+      if (!modalTargetUid) return;
+      if (!isAdminLocal()) { showBanner('Admin only'); return; }
+      const confirmDelete = confirm(`Permanently remove account for "${modalTargetInfo.username || modalTargetUid}"? This will remove their profile and force a fresh profile if they reconnect.`);
+      if (!confirmDelete) return;
+
+      const admin = currentUser();
+      try {
+        // 1) remove presence node (so they disappear immediately)
+        await db.ref(`${PRESENCE_ROOT}/${modalTargetUid}`).remove().catch(()=>{});
+
+        // 2) remove kicks/bans entries for cleanliness
+        await db.ref(`${KICKS_ROOT}/${modalTargetUid}`).remove().catch(()=>{});
+        await db.ref(`${BANS_ROOT}/${modalTargetUid}`).remove().catch(()=>{});
+
+        // 3) mark in removals list so the client knows to wipe local profile and re-create a new guest
+        await db.ref(`${REMOVALS_ROOT}/${modalTargetUid}`).set({ ts: now(), by: admin.uid, byName: admin.username || '' });
+
+        // 4) push a system message announcing the removal (no "ban" wording)
+        await db.ref(`${MESSAGES_ROOT}/${currentServerId || 'global'}`).push({
+          name: 'System',
+          text: `${admin.username || 'An admin'} removed account ${modalTargetInfo.username || modalTargetUid}`,
+          ts: now(),
+          isSystem: true
+        });
+
+        showBanner('Account removed');
+      } catch (err) {
+        console.error('delete account error', err);
+        showBanner('Remove failed');
       }
       memberModal.style.display = 'none';
     });
@@ -1199,6 +1270,31 @@
         const me = currentUser();
         if (me && me.uid === targetUid) hideBanned();
         refreshBanland();
+      });
+    }
+
+    // New: listen for removal signal targeted at this client
+    function startRemovalListener(myUid) {
+      const ref = db.ref(`${REMOVALS_ROOT}/${myUid}`);
+      ref.on('value', snap => {
+        const val = snap.val();
+        if (!val) return;
+        // Admin removed this account. Wipe local profile and create a fresh guest identity.
+        try {
+          // remove presence node (already removed by admin, but ensure)
+          db.ref(`${PRESENCE_ROOT}/${myUid}`).remove().catch(()=>{});
+          // remove any local keys tied to this uid
+          localStorage.removeItem('chat_user');
+          localStorage.removeItem('admin_logged_in');
+          localStorage.removeItem('joined_servers');
+          localStorage.removeItem('bio_' + myUid);
+          localStorage.removeItem('kicked_' + myUid);
+          localStorage.removeItem('banned_' + myUid);
+        } catch (e) {}
+        // remove the removal marker so it doesn't trigger repeatedly
+        db.ref(`${REMOVALS_ROOT}/${myUid}`).remove().catch(()=>{});
+        // reload to re-create a fresh guest identity
+        setTimeout(()=> location.reload(), 300);
       });
     }
 
@@ -1283,7 +1379,11 @@
         me.isAdmin = true;
         saveUser(me);
         localStorage.setItem('admin_logged_in', '1');
-        db.ref(`${PRESENCE_ROOT}/${me.uid}`).update({ username: me.username, isAdmin: true, bio: localStorage.getItem('bio_' + me.uid) || '' }).catch(()=>{});
+        if (presenceRef) {
+          presenceRef.update({ username: me.username, isAdmin: true, bio: localStorage.getItem('bio_' + me.uid) || '' }).catch(()=>{});
+        } else {
+          db.ref(`${PRESENCE_ROOT}/${me.uid}`).update({ username: me.username, isAdmin: true, bio: localStorage.getItem('bio_' + me.uid) || '' }).catch(()=>{});
+        }
         updateAdminUI();
         adminModal.style.display = 'none';
         showBanner('Logged in as admin');
@@ -1300,7 +1400,11 @@
       me.isAdmin = false;
       saveUser(me);
       localStorage.removeItem('admin_logged_in');
-      db.ref(`${PRESENCE_ROOT}/${me.uid}`).update({ isAdmin: false }).catch(()=>{});
+      if (presenceRef) {
+        presenceRef.update({ isAdmin: false }).catch(()=>{});
+      } else {
+        db.ref(`${PRESENCE_ROOT}/${me.uid}`).update({ isAdmin: false }).catch(()=>{});
+      }
       updateAdminUI();
       showBanner('Admin logged out');
       refreshServersUI();
@@ -1340,7 +1444,11 @@
       localStorage.setItem('bio_' + u.uid, text);
       // update presence record so others see it in profile view
       try {
-        await db.ref(`${PRESENCE_ROOT}/${u.uid}`).update({ bio: text, username: u.username || '', isAdmin: !!u.isAdmin, lastSeen: now(), online: true });
+        if (presenceRef) {
+          await presenceRef.update({ bio: text, username: u.username || '', isAdmin: !!u.isAdmin, lastSeen: now(), online: true });
+        } else {
+          await db.ref(`${PRESENCE_ROOT}/${u.uid}`).update({ bio: text, username: u.username || '', isAdmin: !!u.isAdmin, lastSeen: now(), online: true });
+        }
         bioMsg.textContent = 'Saved';
         bioMsg.style.display = 'block';
         setTimeout(()=> { bioModal.style.display = 'none'; bioMsg.style.display = 'none'; }, 700);
@@ -1396,10 +1504,11 @@
       setUserName(name);
     });
 
-    // remove presence on unload: mark offline instead of removing node
+    // remove presence on unload: mark offline and set lastSeen
     window.addEventListener('beforeunload', () => {
       const u = currentUser();
       if (u && u.uid) {
+        // update presence to offline; onDisconnect will also handle this if connection drops
         db.ref(`${PRESENCE_ROOT}/${u.uid}`).update({ online: false, lastSeen: now() }).catch(()=>{});
       }
     });
