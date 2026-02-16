@@ -14,7 +14,15 @@
       --system-gray:#6b7280;
       --shadow: 0 8px 30px rgba(20,30,60,0.06);
     }
-    html,body{height:100%;margin:0;background:linear-gradient(180deg,#eef6ff 0%,var(--bg) 100%);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;color:#0f1724}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;color:#0f1724}
+    /* full background image for locked site */
+    body {
+      background: url('background.png') center center / cover no-repeat fixed;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    /* App layout */
     .app { display:flex; height:100vh; overflow:hidden; }
 
     /* Servers column (left) */
@@ -123,11 +131,24 @@
     }
     #serverContextMenu button:hover { background:#f3f4f6; }
 
-    @media (max-width:900px){ .members-column{display:none} .servers-column{display:none} }
+    /* Auth center card (forced before access) */
+    #authModal { display:flex; background: rgba(0,0,0,0.55); }
+    .auth-card {
+      width:420px; max-width:92%; border-radius:12px; padding:20px; background:rgba(255,255,255,0.98); box-shadow:0 20px 60px rgba(2,6,23,0.45);
+      display:flex; flex-direction:column; gap:12px; align-items:stretch;
+    }
+    .auth-card h2{margin:0;font-size:20px}
+    .auth-row{display:flex;gap:8px;align-items:center}
+    .auth-input{width:100%;padding:10px;border-radius:8px;border:1px solid #e6edf6}
+    .auth-actions{display:flex;gap:8px;justify-content:flex-end}
+    .muted-small{color:var(--muted);font-size:13px}
+
+    @media (max-width:900px){ .members-column{display:none} .servers-column{display:none} .auth-card{width:92%} }
   </style>
 </head>
 <body>
-  <div class="app">
+  <!-- Main app (kept visible but blocked by auth overlay until login) -->
+  <div class="app" id="appRoot" aria-hidden="false">
     <!-- Servers column -->
     <div class="servers-column" aria-label="Servers">
       <button id="createServerBtn" class="create-server-btn" title="Servers" aria-label="Servers">
@@ -153,7 +174,7 @@
           <div class="header-right">
             <input id="displayNameInput" class="name-input" type="text" placeholder="Your name" disabled>
             <div id="authButtons">
-              <button id="openAuthBtn" class="btn" style="background:#4f46e5;color:#fff">Login / Signup</button>
+              <button id="openAuthBtn" class="btn" style="background:#4f46e5;color:#fff;display:none">Account</button>
             </div>
             <button id="logoutBtn" class="btn" style="background:#ef4444;color:#fff;display:none">Logout</button>
           </div>
@@ -208,44 +229,44 @@
     </div>
   </div>
 
-  <!-- Auth modal (signup/login combined) -->
-  <div id="authModal" class="overlay" role="dialog" aria-modal="true">
-    <div class="modal" role="document">
-      <div class="tab-row">
+  <!-- AUTH overlay (required before access) -->
+  <div id="authModal" class="overlay" role="dialog" aria-modal="true" style="display:flex;z-index:2000">
+    <div class="auth-card" role="document" aria-label="Login or create account">
+      <h2>Sign in to continue</h2>
+
+      <div class="tab-row" style="margin-top:6px">
         <div id="tabLogin" class="tab active">Login</div>
         <div id="tabSignup" class="tab">Sign up</div>
       </div>
 
+      <!-- Login pane -->
       <div id="loginPane">
-        <h3>Login</h3>
-        <div style="margin-top:8px" class="muted">Use your account. Admin account: Kyson / 12345678</div>
-        <div style="margin-top:12px">
-          <input id="loginUsername" type="text" placeholder="Username" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7;margin-bottom:8px">
-          <input id="loginPassword" type="password" placeholder="Password" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7">
+        <div class="muted-small">Enter your account credentials to access the chat.</div>
+        <input id="loginUsername" class="auth-input" type="text" placeholder="Username" autocomplete="username">
+        <input id="loginPassword" class="auth-input" type="password" placeholder="Password" autocomplete="current-password">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <label class="muted-small"><input id="rememberCreds" type="checkbox"> Remember me</label>
+          <div id="loginError" class="muted-small" style="color:#b00020;display:none"></div>
         </div>
-        <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
-          <label style="font-size:13px;color:var(--muted)"><input id="rememberCreds" type="checkbox"> Remember me</label>
-        </div>
-        <div class="row" style="margin-top:12px">
+        <div class="auth-actions">
           <button id="loginSubmit" class="btn" style="background:#4f46e5;color:#fff">Login</button>
-          <button id="loginCancel" class="btn" style="background:#e5e7eb">Close</button>
         </div>
-        <div id="loginError" class="muted" style="color:#b00020;margin-top:8px;display:none"></div>
       </div>
 
+      <!-- Signup pane -->
       <div id="signupPane" style="display:none">
-        <h3>Create Account</h3>
-        <div style="margin-top:8px" class="muted">Pick a username and password. No email required.</div>
-        <div style="margin-top:12px">
-          <input id="signupUsername" type="text" placeholder="Username" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7;margin-bottom:8px">
-          <input id="signupPassword" type="password" placeholder="Password" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7">
+        <div class="muted-small">Create a new account (username must be unique).</div>
+        <input id="signupUsername" class="auth-input" type="text" placeholder="Username" autocomplete="username">
+        <input id="signupPassword" class="auth-input" type="password" placeholder="Password" autocomplete="new-password">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div id="signupError" class="muted-small" style="color:#b00020;display:none"></div>
         </div>
-        <div class="row" style="margin-top:12px">
-          <button id="signupSubmit" class="btn" style="background:#10b981;color:#fff">Sign up</button>
-          <button id="signupCancel" class="btn" style="background:#e5e7eb">Close</button>
+        <div class="auth-actions">
+          <button id="signupSubmit" class="btn" style="background:#10b981;color:#fff">Create account</button>
         </div>
-        <div id="signupError" class="muted" style="color:#b00020;margin-top:8px;display:none"></div>
       </div>
+
+      <div style="margin-top:6px" class="muted-small">You must sign in to view or interact with the site.</div>
     </div>
   </div>
 
@@ -284,76 +305,8 @@
     </div>
   </div>
 
-  <!-- Other modals reused from previous version -->
-  <div id="createJoinModal" class="overlay" role="dialog" aria-modal="true">
-    <div class="modal" role="document">
-      <div class="tab-row">
-        <div id="tabCreate" class="tab active">Create Server</div>
-        <div id="tabJoin" class="tab">Join Server</div>
-      </div>
-
-      <div id="createPane">
-        <h3>Create Server</h3>
-        <div style="margin-top:8px" class="muted">Admins can create persistent servers. Choose Public or Private.</div>
-        <div style="margin-top:12px">
-          <input id="newServerName" type="text" placeholder="Server name" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7">
-        </div>
-        <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
-          <label><input type="radio" name="serverType" value="public" checked> Public</label>
-          <label><input type="radio" name="serverType" value="private"> Private</label>
-        </div>
-        <div id="privatePasswordRow" style="margin-top:8px;display:none">
-          <input id="newServerPassword" type="password" placeholder="Password for private server" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7">
-        </div>
-        <div class="row" style="margin-top:12px">
-          <button id="createServerSubmit" class="btn" style="background:#4f46e5;color:#fff">Create</button>
-          <button id="createServerCancel" class="btn" style="background:#e5e7eb">Close</button>
-        </div>
-        <div id="createServerError" class="muted" style="color:#b00020;margin-top:8px;display:none"></div>
-      </div>
-
-      <div id="joinPane" style="display:none">
-        <h3>Join Server</h3>
-        <div style="margin-top:8px" class="muted">Public servers are listed below. Private servers are not listed — to join a private server, enter its exact name and password in the form.</div>
-
-        <div style="margin-top:12px;max-height:180px;overflow:auto;border:1px solid #eef2f7;border-radius:8px;padding:6px" id="publicJoinList"></div>
-
-        <div style="margin-top:12px;border-top:1px dashed #eef2f7;padding-top:12px">
-          <div style="font-weight:600;margin-bottom:6px">Join private server</div>
-          <input id="joinServerName" type="text" placeholder="Server name (exact)" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7;margin-bottom:8px">
-          <input id="joinServerPassword" type="password" placeholder="Password" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7;margin-bottom:8px">
-          <div style="display:flex;gap:8px">
-            <button id="joinPrivateSubmit" class="btn" style="background:#4f46e5;color:#fff">Join Private</button>
-            <button id="joinClose" class="btn" style="background:#e5e7eb">Close</button>
-          </div>
-          <div id="joinError" class="muted" style="color:#b00020;margin-top:8px;display:none"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Banland modal -->
-  <div id="banlandModal" class="overlay">
-    <div class="modal" role="dialog" aria-modal="true">
-      <h3>Banland (unban)</h3>
-      <div id="banList" style="max-height:300px;overflow:auto;margin-top:8px"></div>
-      <div class="row" style="margin-top:12px">
-        <button id="closeBanland" class="btn" style="background:#e5e7eb">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Kicked / Banned full-screen blocks -->
-  <div id="kickedScreen" class="block-screen">
-    <div class="card">
-      <div style="font-size:20px;font-weight:700">You were kicked</div>
-      <div style="margin-top:8px">You cannot send messages in this session. Wait until kick expires or an admin removes it.</div>
-    </div>
-  </div>
-
+  <!-- Other UI elements -->
   <div id="banner" class="banner" role="status" aria-live="polite"></div>
-
-  <!-- server context menu -->
   <div id="serverContextMenu" role="menu" aria-hidden="true"></div>
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -375,6 +328,32 @@
     const db = firebase.database();
 
     // DOM refs
+    const authModal = document.getElementById('authModal');
+    const tabLogin = document.getElementById('tabLogin');
+    const tabSignup = document.getElementById('tabSignup');
+    const loginPane = document.getElementById('loginPane');
+    const signupPane = document.getElementById('signupPane');
+    const loginUsername = document.getElementById('loginUsername');
+    const loginPassword = document.getElementById('loginPassword');
+    const loginSubmit = document.getElementById('loginSubmit');
+    const loginError = document.getElementById('loginError');
+    const signupUsername = document.getElementById('signupUsername');
+    const signupPassword = document.getElementById('signupPassword');
+    const signupSubmit = document.getElementById('signupSubmit');
+    const signupError = document.getElementById('signupError');
+    const rememberCreds = document.getElementById('rememberCreds');
+
+    const openAuthBtn = document.getElementById('openAuthBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    const settingsModal = document.getElementById('settingsModal');
+    const openSettingsBtn = document.getElementById('openSettingsBtn');
+    const settingsUsername = document.getElementById('settingsUsername');
+    const avatarFile = document.getElementById('avatarFile');
+    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+    const cancelSettingsBtn = document.getElementById('cancelSettingsBtn');
+    const settingsMsg = document.getElementById('settingsMsg');
+
     const serverListEl = document.getElementById('serverList');
     const createServerBtn = document.getElementById('createServerBtn');
     const createJoinModal = document.getElementById('createJoinModal');
@@ -405,38 +384,6 @@
     const onlineCountEl = document.getElementById('onlineCount');
     const banner = document.getElementById('banner');
 
-    const openAuthBtn = document.getElementById('openAuthBtn');
-    const authModal = document.getElementById('authModal');
-    const tabLogin = document.getElementById('tabLogin');
-    const tabSignup = document.getElementById('tabSignup');
-    const loginPane = document.getElementById('loginPane');
-    const signupPane = document.getElementById('signupPane');
-    const loginUsername = document.getElementById('loginUsername');
-    const loginPassword = document.getElementById('loginPassword');
-    const loginSubmit = document.getElementById('loginSubmit');
-    const loginCancel = document.getElementById('loginCancel');
-    const loginError = document.getElementById('loginError');
-    const signupUsername = document.getElementById('signupUsername');
-    const signupPassword = document.getElementById('signupPassword');
-    const signupSubmit = document.getElementById('signupSubmit');
-    const signupCancel = document.getElementById('signupCancel');
-    const signupError = document.getElementById('signupError');
-    const rememberCreds = document.getElementById('rememberCreds');
-
-    const logoutBtn = document.getElementById('logoutBtn');
-
-    const settingsModal = document.getElementById('settingsModal');
-    const openSettingsBtn = document.getElementById('openSettingsBtn');
-    const settingsUsername = document.getElementById('settingsUsername');
-    const avatarFile = document.getElementById('avatarFile');
-    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
-    const cancelSettingsBtn = document.getElementById('cancelSettingsBtn');
-    const settingsMsg = document.getElementById('settingsMsg');
-
-    const youAvatar = document.getElementById('youAvatar');
-    const youName = document.getElementById('youName');
-    const youBio = document.getElementById('youBio');
-
     const memberModal = document.getElementById('memberModal');
     const modalName = document.getElementById('modalName');
     const modalUid = document.getElementById('modalUid');
@@ -463,7 +410,7 @@
     const REMOVALS_ROOT = 'removedAccounts';
     const ACCOUNTS_ROOT = 'accounts';
 
-    // Admin credentials (account-based)
+    // Admin credentials (account-based) - still stored in DB as an account but not shown in UI text
     const ADMIN_USERNAME = 'Kyson';
     const ADMIN_PASSWORD = '12345678';
 
@@ -574,7 +521,6 @@
 
     // remove account (admin "Delete Account" action)
     async function removeAccount(uid) {
-      // remove account node and presence and related nodes
       await db.ref(`${ACCOUNTS_ROOT}/${uid}`).remove().catch(()=>{});
       await db.ref(`${PRESENCE_ROOT}/${uid}`).remove().catch(()=>{});
       await db.ref(`${KICKS_ROOT}/${uid}`).remove().catch(()=>{});
@@ -803,7 +749,7 @@
       startMessagesForServer(id);
     }
 
-    // create/join modal UI
+    // create/join modal UI (reused)
     tabCreate.addEventListener('click', () => { tabCreate.classList.add('active'); tabJoin.classList.remove('active'); createPane.style.display='block'; joinPane.style.display='none'; });
     tabJoin.addEventListener('click', () => { tabJoin.classList.add('active'); tabCreate.classList.remove('active'); createPane.style.display='none'; joinPane.style.display='block'; refreshPublicJoinList(); });
 
@@ -1081,6 +1027,7 @@
       const text = raw.replace(/\r?\n|\r/g,' ').trim().slice(0,300);
       if (!text) return;
       const u = localAccount();
+      if (!u) { showBanner('Sign in first'); return; }
       const isAdmin = !!u?.isAdmin;
       try {
         await db.ref(`${MESSAGES_ROOT}/${currentServerId}`).push({ name: u.username, text, ts: now(), uid: u.uid, isAdmin });
@@ -1347,16 +1294,6 @@
     tabLogin.addEventListener('click', () => { tabLogin.classList.add('active'); tabSignup.classList.remove('active'); loginPane.style.display='block'; signupPane.style.display='none'; });
     tabSignup.addEventListener('click', () => { tabSignup.classList.add('active'); tabLogin.classList.remove('active'); loginPane.style.display='none'; signupPane.style.display='block'; });
 
-    openAuthBtn.addEventListener('click', () => {
-      loginError.style.display = 'none';
-      signupError.style.display = 'none';
-      authModal.style.display = 'flex';
-      loginUsername.focus();
-    });
-
-    loginCancel.addEventListener('click', () => authModal.style.display = 'none');
-    signupCancel.addEventListener('click', () => authModal.style.display = 'none');
-
     loginSubmit.addEventListener('click', async () => {
       loginError.style.display = 'none';
       const u = (loginUsername.value || '').trim();
@@ -1421,7 +1358,6 @@
       const newName = (settingsUsername.value || '').trim();
       if (!newName) { settingsMsg.textContent = 'Enter a display name'; settingsMsg.style.display = 'block'; return; }
       settingsMsg.style.display = 'none';
-      // handle avatar file if provided
       const file = avatarFile.files && avatarFile.files[0];
       if (file) {
         const reader = new FileReader();
@@ -1429,7 +1365,6 @@
           const dataUrl = e.target.result;
           try {
             await updateAccount(me.uid, { username: newName, avatar: dataUrl });
-            // update presence and local storage
             localStorage.setItem('avatar_' + me.uid, dataUrl);
             const updated = { ...me, username: newName };
             saveLocalAccount(updated);
@@ -1463,11 +1398,9 @@
 
     // messages & presence init helpers
     function onLogin(acc) {
-      // acc may be object returned from loginAccount or createAccount
       const me = localAccount();
       displayNameInput.value = me.username || '';
       updateAuthUI();
-      // ensure account node exists and fetch avatar/bio
       db.ref(`${ACCOUNTS_ROOT}/${me.uid}`).once('value').then(snap => {
         const info = snap.val() || {};
         const avatar = info.avatar || localStorage.getItem('avatar_' + me.uid) || null;
@@ -1484,12 +1417,12 @@
     function updateAuthUI() {
       const me = localAccount();
       if (me) {
-        openAuthBtn.style.display = 'none';
+        openAuthBtn.style.display = 'inline-block';
         logoutBtn.style.display = 'inline-block';
         displayNameInput.disabled = false;
         displayNameInput.value = me.username || '';
       } else {
-        openAuthBtn.style.display = 'inline-block';
+        openAuthBtn.style.display = 'none';
         logoutBtn.style.display = 'none';
         displayNameInput.disabled = true;
         displayNameInput.value = '';
@@ -1499,14 +1432,17 @@
     // auto-login if saved credentials exist
     async function tryAutoLogin() {
       const saved = getSavedCredentials();
-      if (!saved) return;
+      if (!saved) return false;
       try {
         const acc = await loginAccount(saved.username, saved.password);
         const local = { uid: acc.uid, username: acc.username, isAdmin: !!acc.isAdmin };
         saveLocalAccount(local);
         onLogin(acc);
+        authModal.style.display = 'none';
+        return true;
       } catch (e) {
         clearSavedCredentials();
+        return false;
       }
     }
 
@@ -1577,6 +1513,7 @@
       const u = localAccount();
       youName.textContent = u?.username || 'You';
       const avatar = localStorage.getItem('avatar_' + (u?.uid || '')) || null;
+      const youAvatar = document.getElementById('youAvatar');
       if (avatar) {
         youAvatar.innerHTML = '';
         const img = document.createElement('img');
@@ -1586,31 +1523,37 @@
         youAvatar.innerHTML = (u?.username || 'U').slice(0,2).toUpperCase();
       }
       const bio = localStorage.getItem('bio_' + (u?.uid || '')) || '';
-      youBio.textContent = bio || 'No bio set';
+      document.getElementById('youBio').textContent = bio || 'No bio set';
     }
 
     // init
     (async function init() {
       await ensureAdminAccountExists();
       updateAuthUI();
-      await tryAutoLogin();
+      const auto = await tryAutoLogin();
+      // if auto-login succeeded, authModal hidden in tryAutoLogin; otherwise keep it visible and block access
+      if (!auto) {
+        authModal.style.display = 'flex';
+      } else {
+        authModal.style.display = 'none';
+      }
       startServersListener();
       startMembersListener();
       startKickListener();
       startBanListener();
-      // if logged in after auto-login, onLogin will have been called; otherwise show system message
+
       const me = localAccount();
       if (me) {
         displayNameInput.value = me.username || '';
         renderYouPanel();
         appendSystemMessage('Signed in as ' + me.username + (me.isAdmin ? ' (admin)' : ''));
       } else {
-        appendSystemMessage('You are not signed in. Click Login / Signup to create an account.');
+        // keep the auth overlay visible and block access until login
+        appendSystemMessage('Please sign in to access the chat.');
       }
     })();
 
     // close modals on outside click
-    authModal.addEventListener('click', (ev) => { if (ev.target === authModal) authModal.style.display = 'none'; });
     settingsModal.addEventListener('click', (ev) => { if (ev.target === settingsModal) settingsModal.style.display = 'none'; });
     memberModal.addEventListener('click', (ev) => { if (ev.target === memberModal) memberModal.style.display = 'none'; });
     createJoinModal.addEventListener('click', (ev) => { if (ev.target === createJoinModal) createJoinModal.style.display = 'none'; });
