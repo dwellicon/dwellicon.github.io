@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Chat with Accounts, Servers, Private Channels & Admin Tools</title>
+  <title>Chat with Servers, Private Channels, Members & Admin Tools</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     :root{
@@ -14,15 +14,7 @@
       --system-gray:#6b7280;
       --shadow: 0 8px 30px rgba(20,30,60,0.06);
     }
-    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;color:#0f1724}
-    /* full background image for locked site */
-    body {
-      background: url('background.png') center center / cover no-repeat fixed;
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-    }
-
-    /* App layout */
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#eef6ff 0%,var(--bg) 100%);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;color:#0f1724}
     .app { display:flex; height:100vh; overflow:hidden; }
 
     /* Servers column (left) */
@@ -74,16 +66,14 @@
     .section-title{font-size:12px;color:var(--muted);margin:6px 0 6px 6px}
     .member{display:flex;gap:10px;align-items:flex-start;padding:8px;border-radius:8px;transition:background .12s;cursor:pointer}
     .member:hover{background:rgba(15,23,36,0.03)}
-    .member .avatar{width:40px;height:40px;border-radius:8px;background:#c7d2fe;color:#0f1724;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;overflow:hidden}
-    .member .avatar img{width:100%;height:100%;object-fit:cover;border-radius:8px}
+    .member .avatar{width:40px;height:40px;border-radius:8px;background:#c7d2fe;color:#0f1724;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
     .member .info{display:flex;flex-direction:column}
     .member .name{font-weight:700;font-size:14px;display:flex;gap:8px;align-items:center}
     .member .status{font-size:12px;color:var(--muted);margin-top:4px}
 
     /* bottom user panel */
     .you-panel{border-top:1px solid #eef2f7;padding:10px;display:flex;align-items:center;gap:10px;background:#fff}
-    .you-panel .avatar{width:44px;height:44px;border-radius:8px;background:#c7d2fe;display:flex;align-items:center;justify-content:center;font-weight:700;overflow:hidden}
-    .you-panel .avatar img{width:100%;height:100%;object-fit:cover;border-radius:8px}
+    .you-panel .avatar{width:44px;height:44px;border-radius:8px;background:#c7d2fe;display:flex;align-items:center;justify-content:center;font-weight:700}
     .you-panel .you-info{flex:1;display:flex;flex-direction:column}
     .you-panel .you-name{font-weight:700}
     .you-panel .you-bio{font-size:12px;color:var(--muted);margin-top:4px}
@@ -131,24 +121,11 @@
     }
     #serverContextMenu button:hover { background:#f3f4f6; }
 
-    /* Auth center card (forced before access) */
-    #authModal { display:flex; background: rgba(0,0,0,0.55); }
-    .auth-card {
-      width:420px; max-width:92%; border-radius:12px; padding:20px; background:rgba(255,255,255,0.98); box-shadow:0 20px 60px rgba(2,6,23,0.45);
-      display:flex; flex-direction:column; gap:12px; align-items:stretch;
-    }
-    .auth-card h2{margin:0;font-size:20px}
-    .auth-row{display:flex;gap:8px;align-items:center}
-    .auth-input{width:100%;padding:10px;border-radius:8px;border:1px solid #e6edf6}
-    .auth-actions{display:flex;gap:8px;justify-content:flex-end}
-    .muted-small{color:var(--muted);font-size:13px}
-
-    @media (max-width:900px){ .members-column{display:none} .servers-column{display:none} .auth-card{width:92%} }
+    @media (max-width:900px){ .members-column{display:none} .servers-column{display:none} }
   </style>
 </head>
 <body>
-  <!-- Main app (kept visible but blocked by auth overlay until login) -->
-  <div class="app" id="appRoot" aria-hidden="false">
+  <div class="app">
     <!-- Servers column -->
     <div class="servers-column" aria-label="Servers">
       <button id="createServerBtn" class="create-server-btn" title="Servers" aria-label="Servers">
@@ -172,11 +149,14 @@
             <p class="muted" id="currentServerSubtitle">Real-time messages — select a server</p>
           </div>
           <div class="header-right">
-            <input id="displayNameInput" class="name-input" type="text" placeholder="Your name" disabled>
-            <div id="authButtons">
-              <button id="openAuthBtn" class="btn" style="background:#4f46e5;color:#fff;display:none">Account</button>
-            </div>
-            <button id="logoutBtn" class="btn" style="background:#ef4444;color:#fff;display:none">Logout</button>
+            <input id="displayNameInput" class="name-input" type="text" placeholder="Your name">
+            <button id="adminLoginBtn" class="icon-btn" title="Admin login" aria-label="Admin login">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+                <path d="M21 10v6a2 2 0 0 1-2 2h-3v-3h-4v3H5a2 2 0 0 1-2-2V7a4 4 0 0 1 4-4h6"></path>
+                <circle cx="8.5" cy="11.5" r="1.5"></circle>
+              </svg>
+            </button>
+            <button id="adminLogoutBtn" class="btn" style="background:#ef4444;color:#fff;display:none">Logout</button>
           </div>
         </header>
 
@@ -217,10 +197,10 @@
             <div class="you-bio" id="youBio">No bio set</div>
           </div>
           <div class="you-actions">
-            <button id="openSettingsBtn" class="icon-btn" title="Settings" aria-label="Settings">
+            <button id="editBioBtn" class="icon-btn" title="Edit profile" aria-label="Edit profile">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7z"></path>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06A2 2 0 1 1 2.3 16.88l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09c.7 0 1.3-.4 1.51-1a1.65 1.65 0 0 0-.33-1.82L4.3 3.7A2 2 0 1 1 7.13.87l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V0a2 2 0 1 1 4 0v.09c0 .7.4 1.3 1 1.51a1.65 1.65 0 0 0 1.82-.33l.06-.06A2 2 0 1 1 21.7 7.12l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.7 0 1.3.4 1.51 1H24a2 2 0 1 1 0 4h-.09c-.7 0-1.3.4-1.51 1z"></path>
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
               </svg>
             </button>
           </div>
@@ -229,64 +209,69 @@
     </div>
   </div>
 
-  <!-- AUTH overlay (required before access) -->
-  <div id="authModal" class="overlay" role="dialog" aria-modal="true" style="display:flex;z-index:2000">
-    <div class="auth-card" role="document" aria-label="Login or create account">
-      <h2>Sign in to continue</h2>
-
-      <div class="tab-row" style="margin-top:6px">
-        <div id="tabLogin" class="tab active">Login</div>
-        <div id="tabSignup" class="tab">Sign up</div>
+  <!-- Create / Join modal (combined) -->
+  <div id="createJoinModal" class="overlay" role="dialog" aria-modal="true">
+    <div class="modal" role="document">
+      <div class="tab-row">
+        <div id="tabCreate" class="tab active">Create Server</div>
+        <div id="tabJoin" class="tab">Join Server</div>
       </div>
 
-      <!-- Login pane -->
-      <div id="loginPane">
-        <div class="muted-small">Enter your account credentials to access the chat.</div>
-        <input id="loginUsername" class="auth-input" type="text" placeholder="Username" autocomplete="username">
-        <input id="loginPassword" class="auth-input" type="password" placeholder="Password" autocomplete="current-password">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <label class="muted-small"><input id="rememberCreds" type="checkbox"> Remember me</label>
-          <div id="loginError" class="muted-small" style="color:#b00020;display:none"></div>
+      <!-- Create -->
+      <div id="createPane">
+        <h3>Create Server</h3>
+        <div style="margin-top:8px" class="muted">Admins can create persistent servers. Choose Public or Private.</div>
+        <div style="margin-top:12px">
+          <input id="newServerName" type="text" placeholder="Server name" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7">
         </div>
-        <div class="auth-actions">
-          <button id="loginSubmit" class="btn" style="background:#4f46e5;color:#fff">Login</button>
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+          <label><input type="radio" name="serverType" value="public" checked> Public</label>
+          <label><input type="radio" name="serverType" value="private"> Private</label>
         </div>
+        <div id="privatePasswordRow" style="margin-top:8px;display:none">
+          <input id="newServerPassword" type="password" placeholder="Password for private server" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7">
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button id="createServerSubmit" class="btn" style="background:#4f46e5;color:#fff">Create</button>
+          <button id="createServerCancel" class="btn" style="background:#e5e7eb">Close</button>
+        </div>
+        <div id="createServerError" class="muted" style="color:#b00020;margin-top:8px;display:none"></div>
       </div>
 
-      <!-- Signup pane -->
-      <div id="signupPane" style="display:none">
-        <div class="muted-small">Create a new account (username must be unique).</div>
-        <input id="signupUsername" class="auth-input" type="text" placeholder="Username" autocomplete="username">
-        <input id="signupPassword" class="auth-input" type="password" placeholder="Password" autocomplete="new-password">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <div id="signupError" class="muted-small" style="color:#b00020;display:none"></div>
-        </div>
-        <div class="auth-actions">
-          <button id="signupSubmit" class="btn" style="background:#10b981;color:#fff">Create account</button>
+      <!-- Join -->
+      <div id="joinPane" style="display:none">
+        <h3>Join Server</h3>
+        <div style="margin-top:8px" class="muted">Public servers are listed below. Private servers are not listed — to join a private server, enter its exact name and password in the form.</div>
+
+        <div style="margin-top:12px;max-height:180px;overflow:auto;border:1px solid #eef2f7;border-radius:8px;padding:6px" id="publicJoinList"></div>
+
+        <div style="margin-top:12px;border-top:1px dashed #eef2f7;padding-top:12px">
+          <div style="font-weight:600;margin-bottom:6px">Join private server</div>
+          <input id="joinServerName" type="text" placeholder="Server name (exact)" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7;margin-bottom:8px">
+          <input id="joinServerPassword" type="password" placeholder="Password" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7;margin-bottom:8px">
+          <div style="display:flex;gap:8px">
+            <button id="joinPrivateSubmit" class="btn" style="background:#4f46e5;color:#fff">Join Private</button>
+            <button id="joinClose" class="btn" style="background:#e5e7eb">Close</button>
+          </div>
+          <div id="joinError" class="muted" style="color:#b00020;margin-top:8px;display:none"></div>
         </div>
       </div>
-
-      <div style="margin-top:6px" class="muted-small">You must sign in to view or interact with the site.</div>
     </div>
   </div>
 
-  <!-- Settings modal -->
-  <div id="settingsModal" class="overlay" role="dialog" aria-modal="true">
+  <!-- Edit Bio modal -->
+  <div id="bioModal" class="overlay" role="dialog" aria-modal="true">
     <div class="modal" role="document">
-      <h3>Settings</h3>
-      <div style="margin-top:8px" class="muted">Customize your username and profile picture.</div>
+      <h3>Edit Profile</h3>
+      <div style="margin-top:8px" class="muted">Your bio is public and visible to everyone in the members profile view.</div>
       <div style="margin-top:12px">
-        <input id="settingsUsername" type="text" placeholder="Display name" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7;margin-bottom:8px">
-        <div style="margin-bottom:8px">
-          <label class="muted" style="font-size:13px">Profile picture</label>
-          <input id="avatarFile" type="file" accept="image/*" style="display:block;margin-top:6px">
-        </div>
+        <textarea id="bioInput" rows="4" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7"></textarea>
       </div>
       <div class="row" style="margin-top:12px">
-        <button id="saveSettingsBtn" class="btn" style="background:#4f46e5;color:#fff">Save</button>
-        <button id="cancelSettingsBtn" class="btn" style="background:#e5e7eb">Cancel</button>
+        <button id="saveBioBtn" class="btn" style="background:#4f46e5;color:#fff">Save</button>
+        <button id="cancelBioBtn" class="btn" style="background:#e5e7eb">Cancel</button>
       </div>
-      <div id="settingsMsg" class="muted" style="margin-top:8px;display:none"></div>
+      <div id="bioMsg" class="muted" style="margin-top:8px;display:none"></div>
     </div>
   </div>
 
@@ -300,13 +285,60 @@
       <div class="row" style="margin-top:12px">
         <button id="kickBtn" class="btn danger">Kick</button>
         <button id="deleteAccountBtn" class="btn" style="background:#ef4444;color:#fff">Delete Account</button>
+        <button id="banBtn" class="btn" style="background:#6b7280;color:#fff;display:none">Ban</button>
         <button id="closeModal" class="btn" style="background:#e5e7eb">Close</button>
       </div>
     </div>
   </div>
 
-  <!-- Other UI elements -->
+  <!-- Admin login modal -->
+  <div id="adminModal" class="overlay">
+    <div class="modal" role="dialog" aria-modal="true">
+      <h3>Administrator Login</h3>
+      <div style="margin-top:8px" class="muted">Enter local admin credentials (stored only in this browser).</div>
+      <div style="margin-top:12px">
+        <input id="adminUser" type="text" placeholder="Username" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7">
+      </div>
+      <div style="margin-top:8px">
+        <input id="adminPass" type="password" placeholder="Password" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eef2f7">
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button id="adminSubmit" class="btn" style="background:#4f46e5;color:#fff">Login</button>
+        <button id="adminCancel" class="btn" style="background:#e5e7eb">Cancel</button>
+      </div>
+      <div id="adminError" class="muted" style="color:#b00020;margin-top:8px;display:none"></div>
+    </div>
+  </div>
+
+  <!-- Banland modal -->
+  <div id="banlandModal" class="overlay">
+    <div class="modal" role="dialog" aria-modal="true">
+      <h3>Banland (unban)</h3>
+      <div id="banList" style="max-height:300px;overflow:auto;margin-top:8px"></div>
+      <div class="row" style="margin-top:12px">
+        <button id="closeBanland" class="btn" style="background:#e5e7eb">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kicked / Banned full-screen blocks -->
+  <div id="kickedScreen" class="block-screen">
+    <div class="card">
+      <div style="font-size:20px;font-weight:700">You were kicked</div>
+      <div style="margin-top:8px">You cannot send messages in this session. Wait until kick expires or an admin removes it.</div>
+    </div>
+  </div>
+
+  <div id="bannedScreen" class="block-screen">
+    <div class="card">
+      <div style="font-size:20px;font-weight:700">You are banned</div>
+      <div style="margin-top:8px">This browser is banned from this chat. Unban from Banland to restore access.</div>
+    </div>
+  </div>
+
   <div id="banner" class="banner" role="status" aria-live="polite"></div>
+
+  <!-- server context menu -->
   <div id="serverContextMenu" role="menu" aria-hidden="true"></div>
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -328,32 +360,6 @@
     const db = firebase.database();
 
     // DOM refs
-    const authModal = document.getElementById('authModal');
-    const tabLogin = document.getElementById('tabLogin');
-    const tabSignup = document.getElementById('tabSignup');
-    const loginPane = document.getElementById('loginPane');
-    const signupPane = document.getElementById('signupPane');
-    const loginUsername = document.getElementById('loginUsername');
-    const loginPassword = document.getElementById('loginPassword');
-    const loginSubmit = document.getElementById('loginSubmit');
-    const loginError = document.getElementById('loginError');
-    const signupUsername = document.getElementById('signupUsername');
-    const signupPassword = document.getElementById('signupPassword');
-    const signupSubmit = document.getElementById('signupSubmit');
-    const signupError = document.getElementById('signupError');
-    const rememberCreds = document.getElementById('rememberCreds');
-
-    const openAuthBtn = document.getElementById('openAuthBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-
-    const settingsModal = document.getElementById('settingsModal');
-    const openSettingsBtn = document.getElementById('openSettingsBtn');
-    const settingsUsername = document.getElementById('settingsUsername');
-    const avatarFile = document.getElementById('avatarFile');
-    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
-    const cancelSettingsBtn = document.getElementById('cancelSettingsBtn');
-    const settingsMsg = document.getElementById('settingsMsg');
-
     const serverListEl = document.getElementById('serverList');
     const createServerBtn = document.getElementById('createServerBtn');
     const createJoinModal = document.getElementById('createJoinModal');
@@ -384,6 +390,15 @@
     const onlineCountEl = document.getElementById('onlineCount');
     const banner = document.getElementById('banner');
 
+    const adminLoginBtn = document.getElementById('adminLoginBtn');
+    const adminModal = document.getElementById('adminModal');
+    const adminUser = document.getElementById('adminUser');
+    const adminPass = document.getElementById('adminPass');
+    const adminSubmit = document.getElementById('adminSubmit');
+    const adminCancel = document.getElementById('adminCancel');
+    const adminError = document.getElementById('adminError');
+    const adminLogoutBtn = document.getElementById('adminLogoutBtn');
+
     const memberModal = document.getElementById('memberModal');
     const modalName = document.getElementById('modalName');
     const modalUid = document.getElementById('modalUid');
@@ -391,13 +406,26 @@
     const modalBio = document.getElementById('modalBio');
     const kickBtn = document.getElementById('kickBtn');
     const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+    const banBtn = document.getElementById('banBtn');
     const closeModal = document.getElementById('closeModal');
+
+    const bioModal = document.getElementById('bioModal');
+    const bioInput = document.getElementById('bioInput');
+    const saveBioBtn = document.getElementById('saveBioBtn');
+    const cancelBioBtn = document.getElementById('cancelBioBtn');
+    const bioMsg = document.getElementById('bioMsg');
+    const editBioBtn = document.getElementById('editBioBtn');
+
+    const youAvatar = document.getElementById('youAvatar');
+    const youName = document.getElementById('youName');
+    const youBio = document.getElementById('youBio');
 
     const banlandModal = document.getElementById('banlandModal');
     const banListEl = document.getElementById('banList');
     const closeBanland = document.getElementById('closeBanland');
 
     const kickedScreen = document.getElementById('kickedScreen');
+    const bannedScreen = document.getElementById('bannedScreen');
 
     const serverContextMenu = document.getElementById('serverContextMenu');
 
@@ -407,10 +435,9 @@
     const MESSAGES_ROOT = 'messages';
     const KICKS_ROOT = 'kicks';
     const BANS_ROOT = 'bans';
-    const REMOVALS_ROOT = 'removedAccounts';
-    const ACCOUNTS_ROOT = 'accounts';
+    const REMOVALS_ROOT = 'removedAccounts'; // new: tracks deleted accounts
 
-    // Admin credentials (account-based) - still stored in DB as an account but not shown in UI text
+    // Admin credentials (stored locally only)
     const ADMIN_USERNAME = 'Kyson';
     const ADMIN_PASSWORD = '12345678';
 
@@ -431,127 +458,106 @@
     }
     function now() { return Date.now(); }
 
-    // account helpers
-    function localAccount() {
-      const raw = localStorage.getItem('chat_user');
-      return raw ? JSON.parse(raw) : null;
+    // user helpers
+    function currentUser() {
+      const stored = localStorage.getItem('chat_user');
+      if (stored) return JSON.parse(stored);
+      const guestName = 'Guest-' + Math.random().toString(36).slice(2,8);
+      const uid = 'guest_' + Date.now().toString(36);
+      const user = { username: guestName, uid, isAdmin: false };
+      localStorage.setItem('chat_user', JSON.stringify(user));
+      return user;
     }
-    function saveLocalAccount(acc) {
-      localStorage.setItem('chat_user', JSON.stringify(acc));
-    }
-    function clearLocalAccount() {
-      localStorage.removeItem('chat_user');
+    function saveUser(u) { localStorage.setItem('chat_user', JSON.stringify(u)); }
+
+    function isAdminLocal() {
+      const u = currentUser();
+      return !!u.isAdmin;
     }
 
-    // saved credentials for auto-login
-    function saveCredentials(username, password) {
-      try {
-        localStorage.setItem('saved_creds', JSON.stringify({ username, password }));
-      } catch (e) {}
-    }
-    function clearSavedCredentials() {
-      localStorage.removeItem('saved_creds');
-    }
-    function getSavedCredentials() {
-      try {
-        const raw = localStorage.getItem('saved_creds');
-        return raw ? JSON.parse(raw) : null;
-      } catch (e) { return null; }
-    }
-
-    // create admin account in DB if missing (one-time)
-    async function ensureAdminAccountExists() {
-      try {
-        const snap = await db.ref(ACCOUNTS_ROOT).orderByChild('username').equalTo(ADMIN_USERNAME).once('value');
-        if (!snap.exists()) {
-          const id = db.ref(ACCOUNTS_ROOT).push().key;
-          await db.ref(`${ACCOUNTS_ROOT}/${id}`).set({
-            username: ADMIN_USERNAME,
-            password: ADMIN_PASSWORD,
-            createdAt: now(),
-            isAdmin: true,
-            avatar: null,
-            bio: ''
-          });
-        }
-      } catch (e) { console.error('ensure admin error', e); }
-    }
-
-    // create a new account
-    async function createAccount(username, password) {
-      username = (username || '').trim();
-      password = (password || '').trim();
-      if (!username || !password) throw new Error('Missing fields');
-      // check uniqueness
-      const snap = await db.ref(ACCOUNTS_ROOT).orderByChild('username').equalTo(username).once('value');
-      if (snap.exists()) throw new Error('Username taken');
-      const id = db.ref(ACCOUNTS_ROOT).push().key;
-      await db.ref(`${ACCOUNTS_ROOT}/${id}`).set({
-        username,
-        password,
-        createdAt: now(),
-        isAdmin: (username === ADMIN_USERNAME && password === ADMIN_PASSWORD),
-        avatar: null,
-        bio: ''
-      });
-      return { uid: id, username, isAdmin: (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) };
-    }
-
-    // login by username/password
-    async function loginAccount(username, password) {
-      username = (username || '').trim();
-      password = (password || '').trim();
-      if (!username || !password) throw new Error('Missing fields');
-      const snap = await db.ref(ACCOUNTS_ROOT).orderByChild('username').equalTo(username).once('value');
-      if (!snap.exists()) throw new Error('Account not found');
-      const val = snap.val();
-      const entries = Object.entries(val);
-      for (const [id, info] of entries) {
-        if ((info.password || '') === password) {
-          return { uid: id, username: info.username, isAdmin: !!info.isAdmin, avatar: info.avatar || null, bio: info.bio || '' };
-        }
+    function setUserName(name) {
+      const u = currentUser();
+      u.username = name;
+      if (localStorage.getItem('admin_logged_in') === '1' && name === ADMIN_USERNAME) u.isAdmin = true;
+      saveUser(u);
+      // update presence with new username and existing bio
+      const bio = localStorage.getItem('bio_' + u.uid) || '';
+      if (presenceRef) {
+        presenceRef.update({ username: name, isAdmin: u.isAdmin, bio }).catch(()=>{});
+      } else {
+        db.ref(`${PRESENCE_ROOT}/${u.uid}`).update({ username: name, isAdmin: u.isAdmin, bio }).catch(()=>{});
       }
-      throw new Error('Invalid credentials');
+      updateAdminUI();
+      renderYouPanel();
     }
 
-    // update account fields
-    async function updateAccount(uid, updates) {
-      await db.ref(`${ACCOUNTS_ROOT}/${uid}`).update(updates);
+    function updateAdminUI() {
+      if (isAdminLocal()) adminLogoutBtn.style.display = 'inline-block';
+      else adminLogoutBtn.style.display = 'none';
     }
 
-    // remove account (admin "Delete Account" action)
-    async function removeAccount(uid) {
-      await db.ref(`${ACCOUNTS_ROOT}/${uid}`).remove().catch(()=>{});
-      await db.ref(`${PRESENCE_ROOT}/${uid}`).remove().catch(()=>{});
-      await db.ref(`${KICKS_ROOT}/${uid}`).remove().catch(()=>{});
-      await db.ref(`${BANS_ROOT}/${uid}`).remove().catch(()=>{});
-      await db.ref(`${REMOVALS_ROOT}/${uid}`).set({ ts: now() }).catch(()=>{});
+    // Helpers to remember which private servers this client has joined
+    function getJoinedServers() {
+      try {
+        const raw = localStorage.getItem('joined_servers');
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    function markJoinedServer(serverId) {
+      const arr = getJoinedServers();
+      if (!arr.includes(serverId)) {
+        arr.push(serverId);
+        localStorage.setItem('joined_servers', JSON.stringify(arr));
+        refreshServersUI();
+      }
+    }
+    function unmarkJoinedServer(serverId) {
+      const arr = getJoinedServers();
+      const idx = arr.indexOf(serverId);
+      if (idx !== -1) {
+        arr.splice(idx,1);
+        localStorage.setItem('joined_servers', JSON.stringify(arr));
+        refreshServersUI();
+      }
+    }
+    function hasJoinedServer(serverId) {
+      if (isAdminLocal()) return true;
+      const arr = getJoinedServers();
+      return arr.includes(serverId);
     }
 
-    // presence
-    function startPresence(uid, username, isAdmin=false, avatar=null, bio='') {
+    // presence: robust approach using .info/connected and onDisconnect update
+    function startPresence(uid, username, isAdmin=false) {
+      // presenceRef points to this user's presence node
       presenceRef = db.ref(`${PRESENCE_ROOT}/${uid}`);
       connectedRef = db.ref('.info/connected');
 
-      const localBio = bio || localStorage.getItem('bio_' + uid) || '';
-      const localAvatar = avatar || localStorage.getItem('avatar_' + uid) || null;
+      // ensure we have local bio
+      const localBio = localStorage.getItem('bio_' + uid) || '';
 
+      // Listen for connection state
       connectedRef.on('value', snap => {
         const connected = snap.val();
         if (connected) {
-          presenceRef.update({ username, online: true, lastSeen: now(), isAdmin, bio: localBio, avatar: localAvatar }).catch(()=>{});
+          // set online state immediately
+          presenceRef.update({ username, online: true, lastSeen: now(), isAdmin, bio: localBio }).catch(()=>{});
+          // schedule onDisconnect to mark offline and set lastSeen
           presenceRef.onDisconnect().update({ online: false, lastSeen: now() }).catch(()=>{});
+        } else {
+          // not connected; nothing to do here
         }
       });
 
+      // heartbeat to keep lastSeen fresh while connected
       if (heartbeatTimer) clearInterval(heartbeatTimer);
       heartbeatTimer = setInterval(()=> {
-        const bioNow = localStorage.getItem('bio_' + uid) || localBio;
-        const avatarNow = localStorage.getItem('avatar_' + uid) || localAvatar;
-        presenceRef.update({ lastSeen: now(), online: true, username, isAdmin, bio: bioNow, avatar: avatarNow }).catch(()=>{});
+        const bioNow = localStorage.getItem('bio_' + uid) || '';
+        presenceRef.update({ lastSeen: now(), online: true, username, isAdmin, bio: bioNow }).catch(()=>{});
       }, 25000);
 
-      // listen for removal marker for this uid
+      // listen for removal signal targeted at this UID (admin "Delete Account")
       startRemovalListener(uid);
     }
 
@@ -562,10 +568,11 @@
         const val = snap.val() || {};
         renderServers(val);
         if (!currentServerId) {
+          // pick a visible server for this user (public or joined or created)
           const keys = Object.keys(val);
           for (let k of keys) {
             const info = val[k] || {};
-            if (!info.isPrivate || hasJoinedServer(k) || info.createdBy === localAccount()?.uid || localAccount()?.isAdmin) {
+            if (!info.isPrivate || hasJoinedServer(k) || info.createdBy === currentUser().uid || isAdminLocal()) {
               selectServer(k);
               break;
             }
@@ -589,9 +596,11 @@
       const entries = Object.entries(obj || {});
       entries.sort((a,b) => (a[1].createdAt || 0) - (b[1].createdAt || 0));
       entries.forEach(([id, info]) => {
-        if (info.isPrivate && !hasJoinedServer(id) && info.createdBy !== localAccount()?.uid && !localAccount()?.isAdmin) {
+        // show server if public OR user joined it OR user created it OR admin
+        if (info.isPrivate && !hasJoinedServer(id) && info.createdBy !== currentUser().uid && !isAdminLocal()) {
           return;
         }
+
         const wrap = document.createElement('div');
         wrap.style.display = 'flex';
         wrap.style.flexDirection = 'column';
@@ -606,6 +615,7 @@
         if (id === currentServerId) el.classList.add('active');
 
         el.addEventListener('click', () => selectServer(id));
+
         el.addEventListener('contextmenu', (ev) => {
           ev.preventDefault();
           lastContextServerId = id;
@@ -630,7 +640,8 @@
       serverContextMenu.style.display = 'block';
       serverContextMenu.setAttribute('aria-hidden','false');
 
-      if (localAccount()?.isAdmin) {
+      // Admin: Delete
+      if (isAdminLocal()) {
         const delBtn = document.createElement('button');
         delBtn.textContent = 'Delete Server';
         delBtn.addEventListener('click', async () => {
@@ -646,7 +657,8 @@
         serverContextMenu.appendChild(delBtn);
       }
 
-      if (info.isPrivate && hasJoinedServer(serverId) && info.createdBy !== localAccount()?.uid) {
+      // Leave for joined private servers (not creator)
+      if (info.isPrivate && hasJoinedServer(serverId) && info.createdBy !== currentUser().uid) {
         const leaveBtn = document.createElement('button');
         leaveBtn.textContent = 'Leave Server';
         leaveBtn.addEventListener('click', () => {
@@ -661,7 +673,7 @@
               const servers = snap.val() || {};
               for (let k in servers) {
                 const s = servers[k];
-                if (!s.isPrivate || hasJoinedServer(k) || s.createdBy === localAccount()?.uid || localAccount()?.isAdmin) {
+                if (!s.isPrivate || hasJoinedServer(k) || s.createdBy === currentUser().uid || isAdminLocal()) {
                   selectServer(k);
                   return;
                 }
@@ -675,7 +687,8 @@
         serverContextMenu.appendChild(leaveBtn);
       }
 
-      if (info.isPrivate && info.createdBy === localAccount()?.uid) {
+      // Owner note
+      if (info.isPrivate && info.createdBy === currentUser().uid) {
         const ownerNote = document.createElement('button');
         ownerNote.textContent = 'You are owner';
         ownerNote.disabled = true;
@@ -718,8 +731,8 @@
         return;
       }
 
-      if (info.isPrivate && !hasJoinedServer(id) && info.createdBy !== localAccount()?.uid) {
-        if (localAccount()?.isAdmin) {
+      if (info.isPrivate && !hasJoinedServer(id) && info.createdBy !== currentUser().uid) {
+        if (isAdminLocal()) {
           markJoinedServer(id);
         } else {
           const pw = prompt(`Server "${info.name || id}" is private. Enter password to join:`);
@@ -749,7 +762,7 @@
       startMessagesForServer(id);
     }
 
-    // create/join modal UI (reused)
+    // create/join modal UI
     tabCreate.addEventListener('click', () => { tabCreate.classList.add('active'); tabJoin.classList.remove('active'); createPane.style.display='block'; joinPane.style.display='none'; });
     tabJoin.addEventListener('click', () => { tabJoin.classList.add('active'); tabCreate.classList.remove('active'); createPane.style.display='none'; joinPane.style.display='block'; refreshPublicJoinList(); });
 
@@ -776,11 +789,11 @@
 
       if (!name) { createServerError.textContent = 'Enter a server name'; createServerError.style.display = 'block'; return; }
       if (isPrivate && !password) { createServerError.textContent = 'Enter a password for private server'; createServerError.style.display = 'block'; return; }
-      if (!localAccount()?.isAdmin) { createServerError.textContent = 'Admins only'; createServerError.style.display = 'block'; return; }
+      if (!isAdminLocal()) { createServerError.textContent = 'Admins only'; createServerError.style.display = 'block'; return; }
 
       try {
         const id = db.ref(SERVERS_ROOT).push().key;
-        const me = localAccount();
+        const me = currentUser();
         await db.ref(`${SERVERS_ROOT}/${id}`).set({
           name,
           createdBy: me.uid,
@@ -948,12 +961,13 @@
       el.appendChild(meta);
       el.appendChild(body);
 
+      // actions (delete) - only for non-system messages
       if (!data.isSystem) {
         const actions = document.createElement('div');
         actions.className = 'actions';
 
-        const me = localAccount();
-        const canDelete = (me && (me.uid === data.uid)) || (me && me.isAdmin);
+        const me = currentUser();
+        const canDelete = (me && (me.uid === data.uid)) || isAdminLocal();
 
         if (canDelete) {
           const delBtn = document.createElement('button');
@@ -980,18 +994,20 @@
 
     // Delete flow: confirm, remove from DB, push system notification
     async function confirmAndDeleteMessage(msgId, data) {
-      const me = localAccount();
+      const me = currentUser();
       if (!me) return;
       const isOwner = me.uid === data.uid;
-      const isAdmin = me.isAdmin;
+      const isAdmin = isAdminLocal();
       if (!isOwner && !isAdmin) { showBanner('Not allowed'); return; }
 
       const ok = confirm('Delete this message? This action cannot be undone.');
       if (!ok) return;
 
       try {
+        // remove the message node
         await db.ref(`${MESSAGES_ROOT}/${currentServerId}/${msgId}`).remove();
 
+        // create system notification message describing deletion
         let sysText = '';
         if (isOwner && !isAdmin) {
           sysText = `${me.username} deleted their message`;
@@ -1023,12 +1039,12 @@
     async function sendMessage() {
       if (!currentServerId) { showBanner('Select a server first'); return; }
       if (isKickedThisSession()) { showBanner('You are kicked this session'); return; }
+      if (isBannedLocal()) { showBanner('You are banned'); return; }
       const raw = msgInput.value || '';
       const text = raw.replace(/\r?\n|\r/g,' ').trim().slice(0,300);
       if (!text) return;
-      const u = localAccount();
-      if (!u) { showBanner('Sign in first'); return; }
-      const isAdmin = !!u?.isAdmin;
+      const u = currentUser();
+      const isAdmin = !!u.isAdmin;
       try {
         await db.ref(`${MESSAGES_ROOT}/${currentServerId}`).push({ name: u.username, text, ts: now(), uid: u.uid, isAdmin });
         msgInput.value = '';
@@ -1052,6 +1068,7 @@
       offlineListEl.innerHTML = '';
 
       const entries = Object.entries(obj || {});
+      // sort by online then lastSeen
       entries.sort((a,b) => {
         const A = a[1]||{}, B = b[1]||{};
         const aOnline = A.online ? 1 : 0, bOnline = B.online ? 1 : 0;
@@ -1060,9 +1077,10 @@
       });
 
       let onlineCount = 0;
-      const STALE_MS = 35000;
+      const STALE_MS = 35000; // treat presence stale after 35s
 
       entries.forEach(([uid, info]) => {
+        // compute effective online: presence.online true AND lastSeen recent
         const lastSeen = info.lastSeen || 0;
         const effectiveOnline = !!info.online && (Date.now() - lastSeen < STALE_MS);
 
@@ -1072,13 +1090,7 @@
 
         const avatar = document.createElement('div');
         avatar.className = 'avatar';
-        if (info.avatar) {
-          const img = document.createElement('img');
-          img.src = info.avatar;
-          avatar.appendChild(img);
-        } else {
-          avatar.textContent = (info.username || 'U').slice(0,2).toUpperCase();
-        }
+        avatar.textContent = (info.username || 'U').slice(0,2).toUpperCase();
 
         const infoWrap = document.createElement('div');
         infoWrap.className = 'info';
@@ -1105,6 +1117,7 @@
         member.appendChild(avatar);
         member.appendChild(infoWrap);
 
+        // clicking opens profile modal which shows bio (bio is not shown inline)
         member.addEventListener('click', () => openMemberModal(uid, info));
 
         if (effectiveOnline) {
@@ -1116,7 +1129,7 @@
       });
 
       onlineCountEl.textContent = onlineCount + ' online';
-      renderYouPanel();
+      renderYouPanel(); // ensure bottom panel reflects latest bio/name
     }
 
     function timeAgo(ts) {
@@ -1129,7 +1142,7 @@
       return h + 'h';
     }
 
-    // member modal actions (kick/delete)
+    // member modal actions (kick/ban/delete)
     let modalTargetUid = null;
     let modalTargetInfo = null;
     function openMemberModal(uid, info) {
@@ -1139,7 +1152,7 @@
       modalUid.textContent = uid;
       modalStatus.textContent = (info.online && (Date.now() - (info.lastSeen||0) < 35000)) ? 'online' : 'offline';
       modalBio.textContent = info.bio || 'No bio';
-      if (localAccount()?.isAdmin) {
+      if (isAdminLocal()) {
         kickBtn.style.display = 'inline-block';
         deleteAccountBtn.style.display = 'inline-block';
       } else {
@@ -1152,10 +1165,10 @@
 
     kickBtn.addEventListener('click', async () => {
       if (!modalTargetUid) return;
-      const u = localAccount();
-      if (!u?.isAdmin) { showBanner('Admin only'); return; }
+      const u = currentUser();
+      if (!isAdminLocal()) { showBanner('Admin only'); return; }
       try {
-        const ttl = 30_000;
+        const ttl = 30_000; // 30 seconds
         await db.ref(`${KICKS_ROOT}/${modalTargetUid}`).set({ ts: now(), by: u.uid, byName: u.username, ttl });
         showBanner('Kick sent (30s)');
       } catch (err) {
@@ -1165,24 +1178,52 @@
       memberModal.style.display = 'none';
     });
 
+    // New: Delete Account (admin-only). This removes presence and related nodes and signals the client to reset.
     deleteAccountBtn.addEventListener('click', async () => {
       if (!modalTargetUid) return;
-      const u = localAccount();
-      if (!u?.isAdmin) { showBanner('Admin only'); return; }
+      if (!isAdminLocal()) { showBanner('Admin only'); return; }
       const confirmDelete = confirm(`Permanently remove account for "${modalTargetInfo.username || modalTargetUid}"? This will remove their profile and force a fresh profile if they reconnect.`);
       if (!confirmDelete) return;
+
+      const admin = currentUser();
       try {
-        await removeAccount(modalTargetUid);
+        // 1) remove presence node (so they disappear immediately)
+        await db.ref(`${PRESENCE_ROOT}/${modalTargetUid}`).remove().catch(()=>{});
+
+        // 2) remove kicks/bans entries for cleanliness
+        await db.ref(`${KICKS_ROOT}/${modalTargetUid}`).remove().catch(()=>{});
+        await db.ref(`${BANS_ROOT}/${modalTargetUid}`).remove().catch(()=>{});
+
+        // 3) mark in removals list so the client knows to wipe local profile and re-create a new guest
+        await db.ref(`${REMOVALS_ROOT}/${modalTargetUid}`).set({ ts: now(), by: admin.uid, byName: admin.username || '' });
+
+        // 4) push a system message announcing the removal (no "ban" wording)
         await db.ref(`${MESSAGES_ROOT}/${currentServerId || 'global'}`).push({
           name: 'System',
-          text: `${u.username || 'An admin'} removed account ${modalTargetInfo.username || modalTargetUid}`,
+          text: `${admin.username || 'An admin'} removed account ${modalTargetInfo.username || modalTargetUid}`,
           ts: now(),
           isSystem: true
         });
+
         showBanner('Account removed');
       } catch (err) {
-        console.error('remove account error', err);
+        console.error('delete account error', err);
         showBanner('Remove failed');
+      }
+      memberModal.style.display = 'none';
+    });
+
+    banBtn.addEventListener('click', async () => {
+      if (!modalTargetUid) return;
+      const u = currentUser();
+      if (!isAdminLocal()) { showBanner('Admin only'); return; }
+      try {
+        const targetName = document.querySelector(`.member[data-uid="${modalTargetUid}"] .name`)?.textContent || modalTargetUid;
+        await db.ref(`${BANS_ROOT}/${modalTargetUid}`).set({ ts: now(), by: u.uid, byName: u.username, username: targetName });
+        showBanner('Ban applied');
+      } catch (err) {
+        console.error('ban error', err);
+        showBanner('Ban failed');
       }
       memberModal.style.display = 'none';
     });
@@ -1193,7 +1234,7 @@
       ref.on('child_added', snap => {
         const targetUid = snap.key;
         const data = snap.val() || {};
-        const me = localAccount();
+        const me = currentUser();
         if (me && me.uid === targetUid) {
           const expiry = (data.ts || now()) + (data.ttl || 30000);
           localStorage.setItem(`kicked_${me.uid}`, String(expiry));
@@ -1208,38 +1249,61 @@
       ref.on('child_removed', snap => {
         const targetUid = snap.key;
         localStorage.removeItem(`kicked_${targetUid}`);
-        const me = localAccount();
+        const me = currentUser();
         if (me && me.uid === targetUid) hideKicked();
       });
     }
 
-    // removal listener for this client
+    function startBanListener() {
+      const ref = db.ref(BANS_ROOT);
+      ref.on('child_added', snap => {
+        const targetUid = snap.key;
+        const data = snap.val() || {};
+        localStorage.setItem(`banned_${targetUid}`, JSON.stringify({ ts: data.ts || now(), by: data.by || null, byName: data.byName || null, username: data.username || null }));
+        const me = currentUser();
+        if (me && me.uid === targetUid) showBanned();
+        refreshBanland();
+      });
+      ref.on('child_removed', snap => {
+        const targetUid = snap.key;
+        localStorage.removeItem(`banned_${targetUid}`);
+        const me = currentUser();
+        if (me && me.uid === targetUid) hideBanned();
+        refreshBanland();
+      });
+    }
+
+    // New: listen for removal signal targeted at this client
     function startRemovalListener(myUid) {
       const ref = db.ref(`${REMOVALS_ROOT}/${myUid}`);
       ref.on('value', snap => {
         const val = snap.val();
         if (!val) return;
+        // Admin removed this account. Wipe local profile and create a fresh guest identity.
         try {
+          // remove presence node (already removed by admin, but ensure)
           db.ref(`${PRESENCE_ROOT}/${myUid}`).remove().catch(()=>{});
+          // remove any local keys tied to this uid
           localStorage.removeItem('chat_user');
           localStorage.removeItem('admin_logged_in');
           localStorage.removeItem('joined_servers');
           localStorage.removeItem('bio_' + myUid);
-          localStorage.removeItem('avatar_' + myUid);
           localStorage.removeItem('kicked_' + myUid);
           localStorage.removeItem('banned_' + myUid);
         } catch (e) {}
+        // remove the removal marker so it doesn't trigger repeatedly
         db.ref(`${REMOVALS_ROOT}/${myUid}`).remove().catch(()=>{});
+        // reload to re-create a fresh guest identity
         setTimeout(()=> location.reload(), 300);
       });
     }
 
-    // kicked UI helpers
+    // kicked/banned UI helpers
     function showKicked() { kickedScreen.style.display = 'flex'; }
     function hideKicked() { kickedScreen.style.display = 'none'; }
     function isKickedThisSession() {
-      const me = localAccount();
-      const val = localStorage.getItem(`kicked_${me?.uid}`);
+      const me = currentUser();
+      const val = localStorage.getItem(`kicked_${me.uid}`);
       if (!val) return false;
       const expiry = Number(val);
       if (isNaN(expiry)) return true;
@@ -1252,13 +1316,19 @@
       return true;
     }
 
-    // Banland (kept for compatibility)
+    function showBanned() { bannedScreen.style.display = 'flex'; }
+    function hideBanned() { bannedScreen.style.display = 'none'; }
+    function isBannedLocal() { return !!localStorage.getItem(`banned_${currentUser().uid}`); }
+
+    // Banland
     closeBanland.addEventListener('click', ()=> banlandModal.style.display = 'none');
+
     async function openBanland() {
-      if (!localAccount()?.isAdmin) { showBanner('Admin only'); return; }
+      if (!isAdminLocal()) { showBanner('Admin only'); return; }
       await refreshBanland();
       banlandModal.style.display = 'flex';
     }
+
     async function refreshBanland() {
       const snap = await db.ref(BANS_ROOT).once('value');
       const bans = snap.val() || {};
@@ -1290,278 +1360,176 @@
       });
     }
 
-    // Auth UI
-    tabLogin.addEventListener('click', () => { tabLogin.classList.add('active'); tabSignup.classList.remove('active'); loginPane.style.display='block'; signupPane.style.display='none'; });
-    tabSignup.addEventListener('click', () => { tabSignup.classList.add('active'); tabLogin.classList.remove('active'); loginPane.style.display='none'; signupPane.style.display='block'; });
-
-    loginSubmit.addEventListener('click', async () => {
-      loginError.style.display = 'none';
-      const u = (loginUsername.value || '').trim();
-      const p = (loginPassword.value || '').trim();
-      if (!u || !p) { loginError.textContent = 'Enter username and password'; loginError.style.display = 'block'; return; }
-      try {
-        const acc = await loginAccount(u, p);
-        const local = { uid: acc.uid, username: acc.username, isAdmin: !!acc.isAdmin };
-        saveLocalAccount(local);
-        if (rememberCreds.checked) saveCredentials(u, p);
-        else clearSavedCredentials();
-        authModal.style.display = 'none';
-        onLogin(acc);
-      } catch (err) {
-        loginError.textContent = err.message || 'Login failed';
-        loginError.style.display = 'block';
-      }
+    // Admin login flow (local-only)
+    adminLoginBtn.addEventListener('click', () => {
+      adminError.style.display = 'none';
+      adminUser.value = '';
+      adminPass.value = '';
+      adminModal.style.display = 'flex';
+      adminUser.focus();
     });
+    adminCancel.addEventListener('click', () => adminModal.style.display = 'none');
 
-    signupSubmit.addEventListener('click', async () => {
-      signupError.style.display = 'none';
-      const u = (signupUsername.value || '').trim();
-      const p = (signupPassword.value || '').trim();
-      if (!u || !p) { signupError.textContent = 'Enter username and password'; signupError.style.display = 'block'; return; }
-      try {
-        const acc = await createAccount(u, p);
-        const local = { uid: acc.uid, username: acc.username, isAdmin: !!acc.isAdmin };
-        saveLocalAccount(local);
-        saveCredentials(u, p);
-        authModal.style.display = 'none';
-        onLogin(acc);
-      } catch (err) {
-        signupError.textContent = err.message || 'Signup failed';
-        signupError.style.display = 'block';
-      }
-    });
-
-    logoutBtn.addEventListener('click', () => {
-      const me = localAccount();
-      if (me && me.uid) {
-        db.ref(`${PRESENCE_ROOT}/${me.uid}`).update({ online: false, lastSeen: now() }).catch(()=>{});
-      }
-      clearLocalAccount();
-      clearSavedCredentials();
-      updateAuthUI();
-      location.reload();
-    });
-
-    // Settings UI
-    openSettingsBtn.addEventListener('click', () => {
-      const me = localAccount();
-      if (!me) { showBanner('Login first'); return; }
-      settingsUsername.value = me.username || '';
-      settingsMsg.style.display = 'none';
-      settingsModal.style.display = 'flex';
-    });
-    cancelSettingsBtn.addEventListener('click', () => settingsModal.style.display = 'none');
-
-    saveSettingsBtn.addEventListener('click', async () => {
-      const me = localAccount();
-      if (!me) { settingsMsg.textContent = 'Not logged in'; settingsMsg.style.display = 'block'; return; }
-      const newName = (settingsUsername.value || '').trim();
-      if (!newName) { settingsMsg.textContent = 'Enter a display name'; settingsMsg.style.display = 'block'; return; }
-      settingsMsg.style.display = 'none';
-      const file = avatarFile.files && avatarFile.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          const dataUrl = e.target.result;
-          try {
-            await updateAccount(me.uid, { username: newName, avatar: dataUrl });
-            localStorage.setItem('avatar_' + me.uid, dataUrl);
-            const updated = { ...me, username: newName };
-            saveLocalAccount(updated);
-            db.ref(`${PRESENCE_ROOT}/${me.uid}`).update({ username: newName, avatar: dataUrl, lastSeen: now(), online: true }).catch(()=>{});
-            settingsMsg.textContent = 'Saved';
-            settingsMsg.style.display = 'block';
-            setTimeout(()=> { settingsModal.style.display = 'none'; settingsMsg.style.display = 'none'; }, 700);
-            renderYouPanel();
-          } catch (err) {
-            settingsMsg.textContent = 'Save failed';
-            settingsMsg.style.display = 'block';
-          }
-        };
-        reader.readAsDataURL(file);
-      } else {
-        try {
-          await updateAccount(me.uid, { username: newName });
-          const updated = { ...me, username: newName };
-          saveLocalAccount(updated);
-          db.ref(`${PRESENCE_ROOT}/${me.uid}`).update({ username: newName, lastSeen: now(), online: true }).catch(()=>{});
-          settingsMsg.textContent = 'Saved';
-          settingsMsg.style.display = 'block';
-          setTimeout(()=> { settingsModal.style.display = 'none'; settingsMsg.style.display = 'none'; }, 700);
-          renderYouPanel();
-        } catch (err) {
-          settingsMsg.textContent = 'Save failed';
-          settingsMsg.style.display = 'block';
+    adminSubmit.addEventListener('click', () => {
+      const u = (adminUser.value || '').trim();
+      const p = (adminPass.value || '').trim();
+      if (u === ADMIN_USERNAME && p === ADMIN_PASSWORD) {
+        const me = currentUser();
+        me.username = ADMIN_USERNAME;
+        me.isAdmin = true;
+        saveUser(me);
+        localStorage.setItem('admin_logged_in', '1');
+        if (presenceRef) {
+          presenceRef.update({ username: me.username, isAdmin: true, bio: localStorage.getItem('bio_' + me.uid) || '' }).catch(()=>{});
+        } else {
+          db.ref(`${PRESENCE_ROOT}/${me.uid}`).update({ username: me.username, isAdmin: true, bio: localStorage.getItem('bio_' + me.uid) || '' }).catch(()=>{});
         }
-      }
-    });
-
-    // messages & presence init helpers
-    function onLogin(acc) {
-      const me = localAccount();
-      displayNameInput.value = me.username || '';
-      updateAuthUI();
-      db.ref(`${ACCOUNTS_ROOT}/${me.uid}`).once('value').then(snap => {
-        const info = snap.val() || {};
-        const avatar = info.avatar || localStorage.getItem('avatar_' + me.uid) || null;
-        const bio = info.bio || localStorage.getItem('bio_' + me.uid) || '';
-        if (avatar) localStorage.setItem('avatar_' + me.uid, avatar);
-        if (bio) localStorage.setItem('bio_' + me.uid, bio);
-        startPresence(me.uid, me.username, !!info.isAdmin, avatar, bio);
-      }).catch(()=> {
-        startPresence(me.uid, me.username, !!me.isAdmin, null, '');
-      });
-      showBanner('Logged in as ' + me.username);
-    }
-
-    function updateAuthUI() {
-      const me = localAccount();
-      if (me) {
-        openAuthBtn.style.display = 'inline-block';
-        logoutBtn.style.display = 'inline-block';
-        displayNameInput.disabled = false;
-        displayNameInput.value = me.username || '';
+        updateAdminUI();
+        adminModal.style.display = 'none';
+        showBanner('Logged in as admin');
+        refreshServersUI();
       } else {
-        openAuthBtn.style.display = 'none';
-        logoutBtn.style.display = 'none';
-        displayNameInput.disabled = true;
-        displayNameInput.value = '';
+        adminError.textContent = 'Invalid credentials';
+        adminError.style.display = 'block';
       }
-    }
-
-    // auto-login if saved credentials exist
-    async function tryAutoLogin() {
-      const saved = getSavedCredentials();
-      if (!saved) return false;
-      try {
-        const acc = await loginAccount(saved.username, saved.password);
-        const local = { uid: acc.uid, username: acc.username, isAdmin: !!acc.isAdmin };
-        saveLocalAccount(local);
-        onLogin(acc);
-        authModal.style.display = 'none';
-        return true;
-      } catch (e) {
-        clearSavedCredentials();
-        return false;
-      }
-    }
-
-    // presence removal on unload
-    window.addEventListener('beforeunload', () => {
-      const me = localAccount();
-      if (me && me.uid) db.ref(`${PRESENCE_ROOT}/${me.uid}`).update({ online: false, lastSeen: now() }).catch(()=>{});
     });
 
-    // displayName change (local only; also update account)
-    displayNameInput.addEventListener('change', async () => {
-      const name = (displayNameInput.value || '').trim();
-      const me = localAccount();
-      if (!me) { displayNameInput.value = ''; return; }
-      try {
-        await updateAccount(me.uid, { username: name });
-        const updated = { ...me, username: name };
-        saveLocalAccount(updated);
-        db.ref(`${PRESENCE_ROOT}/${me.uid}`).update({ username: name, lastSeen: now(), online: true }).catch(()=>{});
-        renderYouPanel();
-      } catch (e) { showBanner('Update failed'); }
+    // Admin logout
+    adminLogoutBtn.addEventListener('click', () => {
+      const me = currentUser();
+      me.isAdmin = false;
+      saveUser(me);
+      localStorage.removeItem('admin_logged_in');
+      if (presenceRef) {
+        presenceRef.update({ isAdmin: false }).catch(()=>{});
+      } else {
+        db.ref(`${PRESENCE_ROOT}/${me.uid}`).update({ isAdmin: false }).catch(()=>{});
+      }
+      updateAdminUI();
+      showBanner('Admin logged out');
+      refreshServersUI();
     });
 
-    // server join memory helpers
-    function getJoinedServers() {
-      try {
-        const raw = localStorage.getItem('joined_servers');
-        return raw ? JSON.parse(raw) : [];
-      } catch (e) { return []; }
-    }
-    function markJoinedServer(serverId) {
-      const arr = getJoinedServers();
-      if (!arr.includes(serverId)) {
-        arr.push(serverId);
-        localStorage.setItem('joined_servers', JSON.stringify(arr));
-        refreshServersUI();
-      }
-    }
-    function unmarkJoinedServer(serverId) {
-      const arr = getJoinedServers();
-      const idx = arr.indexOf(serverId);
-      if (idx !== -1) {
-        arr.splice(idx,1);
-        localStorage.setItem('joined_servers', JSON.stringify(arr));
-        refreshServersUI();
-      }
-    }
-    function hasJoinedServer(serverId) {
-      if (localAccount()?.isAdmin) return true;
-      const arr = getJoinedServers();
-      return arr.includes(serverId);
+    // refresh servers UI helper
+    function refreshServersUI() {
+      db.ref(SERVERS_ROOT).once('value').then(snap => {
+        renderServers(snap.val() || {});
+      }).catch(()=>{});
     }
 
-    // init messages & presence listeners
-    function startMessagesForServer(serverId) {
-      chatEl.innerHTML = '';
-      messagesRef = db.ref(`${MESSAGES_ROOT}/${serverId}`);
-      messagesRef.limitToLast(500).on('child_added', snap => {
-        appendChatMessage(snap.key, snap.val());
-      }, err => appendSystemMessage('Listen error: ' + (err && err.message ? err.message : err)));
-      messagesRef.on('child_removed', snap => {
-        removeChatMessage(snap.key);
-      });
-    }
-
-    // You panel rendering
+    // You panel rendering & bio editing
     function renderYouPanel() {
-      const u = localAccount();
-      youName.textContent = u?.username || 'You';
-      const avatar = localStorage.getItem('avatar_' + (u?.uid || '')) || null;
-      const youAvatar = document.getElementById('youAvatar');
-      if (avatar) {
-        youAvatar.innerHTML = '';
-        const img = document.createElement('img');
-        img.src = avatar;
-        youAvatar.appendChild(img);
-      } else {
-        youAvatar.innerHTML = (u?.username || 'U').slice(0,2).toUpperCase();
-      }
-      const bio = localStorage.getItem('bio_' + (u?.uid || '')) || '';
-      document.getElementById('youBio').textContent = bio || 'No bio set';
+      const u = currentUser();
+      youName.textContent = u.username || 'You';
+      youAvatar.textContent = (u.username || 'U').slice(0,2).toUpperCase();
+      const bio = localStorage.getItem('bio_' + u.uid) || '';
+      youBio.textContent = bio || 'No bio set';
     }
+
+    editBioBtn.addEventListener('click', () => {
+      const u = currentUser();
+      bioInput.value = localStorage.getItem('bio_' + u.uid) || '';
+      bioMsg.style.display = 'none';
+      bioModal.style.display = 'flex';
+      bioInput.focus();
+    });
+
+    cancelBioBtn.addEventListener('click', () => {
+      bioModal.style.display = 'none';
+    });
+
+    saveBioBtn.addEventListener('click', async () => {
+      const u = currentUser();
+      const text = (bioInput.value || '').trim().slice(0,300);
+      localStorage.setItem('bio_' + u.uid, text);
+      // update presence record so others see it in profile view
+      try {
+        if (presenceRef) {
+          await presenceRef.update({ bio: text, username: u.username || '', isAdmin: !!u.isAdmin, lastSeen: now(), online: true });
+        } else {
+          await db.ref(`${PRESENCE_ROOT}/${u.uid}`).update({ bio: text, username: u.username || '', isAdmin: !!u.isAdmin, lastSeen: now(), online: true });
+        }
+        bioMsg.textContent = 'Saved';
+        bioMsg.style.display = 'block';
+        setTimeout(()=> { bioModal.style.display = 'none'; bioMsg.style.display = 'none'; }, 700);
+        renderYouPanel();
+      } catch (err) {
+        console.error('save bio error', err);
+        bioMsg.textContent = 'Save failed';
+        bioMsg.style.display = 'block';
+      }
+    });
 
     // init
-    (async function init() {
-      await ensureAdminAccountExists();
-      updateAuthUI();
-      const auto = await tryAutoLogin();
-      // if auto-login succeeded, authModal hidden in tryAutoLogin; otherwise keep it visible and block access
-      if (!auto) {
-        authModal.style.display = 'flex';
-      } else {
-        authModal.style.display = 'none';
-      }
+    (function init() {
+      const u = currentUser();
+      // if admin flag stored, restore
+      if (localStorage.getItem('admin_logged_in') === '1' && u.username === ADMIN_USERNAME) u.isAdmin = true;
+      saveUser(u);
+      displayNameInput.value = u.username || '';
+      updateAdminUI();
+      renderYouPanel();
+      startPresence(u.uid, u.username, !!u.isAdmin);
       startServersListener();
       startMembersListener();
       startKickListener();
       startBanListener();
 
-      const me = localAccount();
-      if (me) {
-        displayNameInput.value = me.username || '';
-        renderYouPanel();
-        appendSystemMessage('Signed in as ' + me.username + (me.isAdmin ? ' (admin)' : ''));
-      } else {
-        // keep the auth overlay visible and block access until login
-        appendSystemMessage('Please sign in to access the chat.');
-      }
+      db.ref(`${KICKS_ROOT}/${u.uid}`).once('value').then(snap => {
+        const data = snap.val();
+        if (!data) {
+          localStorage.removeItem(`kicked_${u.uid}`);
+          hideKicked();
+        } else {
+          const expiry = (data.ts || now()) + (data.ttl || 30000);
+          localStorage.setItem(`kicked_${u.uid}`, String(expiry));
+          if (Date.now() > expiry) {
+            db.ref(`${KICKS_ROOT}/${u.uid}`).remove().catch(()=>{});
+            localStorage.removeItem(`kicked_${u.uid}`);
+            hideKicked();
+          } else {
+            showKicked();
+            setTimeout(()=> db.ref(`${KICKS_ROOT}/${u.uid}`).remove().catch(()=>{}), expiry - Date.now() + 500);
+          }
+        }
+      }).catch(()=>{});
+
+      if (isBannedLocal()) showBanned();
+      appendSystemMessage('You are signed in as ' + u.username + (isAdminLocal() ? ' (admin)' : ''));
     })();
 
+    // displayName change
+    displayNameInput.addEventListener('change', () => {
+      const name = (displayNameInput.value || '').trim() || currentUser().username;
+      setUserName(name);
+    });
+
+    // remove presence on unload: mark offline and set lastSeen
+    window.addEventListener('beforeunload', () => {
+      const u = currentUser();
+      if (u && u.uid) {
+        // update presence to offline; onDisconnect will also handle this if connection drops
+        db.ref(`${PRESENCE_ROOT}/${u.uid}`).update({ online: false, lastSeen: now() }).catch(()=>{});
+      }
+    });
+
+    // Alt+X opens Banland
+    window.addEventListener('keydown', (e) => {
+      if (e.altKey && (e.key === 'x' || e.key === 'X')) {
+        openBanland();
+      }
+    });
+
     // close modals on outside click
-    settingsModal.addEventListener('click', (ev) => { if (ev.target === settingsModal) settingsModal.style.display = 'none'; });
-    memberModal.addEventListener('click', (ev) => { if (ev.target === memberModal) memberModal.style.display = 'none'; });
     createJoinModal.addEventListener('click', (ev) => { if (ev.target === createJoinModal) createJoinModal.style.display = 'none'; });
+    adminModal.addEventListener('click', (ev) => { if (ev.target === adminModal) adminModal.style.display = 'none'; });
+    memberModal.addEventListener('click', (ev) => { if (ev.target === memberModal) memberModal.style.display = 'none'; });
     banlandModal.addEventListener('click', (ev) => { if (ev.target === banlandModal) banlandModal.style.display = 'none'; });
+    bioModal.addEventListener('click', (ev) => { if (ev.target === bioModal) bioModal.style.display = 'none'; });
 
     // expose helpers for debugging
     window.__chatHelpers = {
-      localAccount, loginAccount, createAccount, updateAccount, removeAccount,
+      currentUser, isAdminLocal, isBannedLocal, isKickedThisSession,
       showBanner, selectServer, refreshPublicJoinList, getJoinedServers, refreshServersUI, renderYouPanel
     };
   </script>
