@@ -4,349 +4,249 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dwellicon</title>
-    <!-- Import Inter Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
     
     <style>
-        /* --- DESIGN SYSTEM --- */
+        /* --- THEME & RESET --- */
         :root {
             --bg-app: #000000;
-            --bg-sidebar: #0a0a0a;
-            --bg-panel: #111111;
-            --border: 1px solid #333;
-            --text-main: #ffffff;
-            --text-sub: #888888;
-            --accent: #ffffff;
-            
-            --tag-owner: #f1c40f;
-            --tag-admin: #e74c3c;
+            --bg-sec: #0a0a0a;
+            --border: 1px solid #222;
+            --text: #ffffff;
+            --text-dim: #666;
+            --accent: #fff;
+            --danger: #e74c3c;
+            --own: #f1c40f;
         }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg-app); color: var(--text); height: 100vh; overflow: hidden; }
         
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: var(--bg-app); 
-            color: var(--text-main); 
-            height: 100vh; 
-            overflow: hidden; 
-        }
-
         /* --- UTILS --- */
         .hidden { display: none !important; }
         .btn { 
-            padding: 8px 16px; 
-            border-radius: 6px; 
-            border: 1px solid #333; 
-            background: #222; 
-            color: white; 
-            font-family: 'Inter', sans-serif;
-            font-weight: 600; 
-            cursor: pointer; 
-            transition: 0.2s;
+            padding: 8px 12px; border-radius: 4px; border: 1px solid #333; 
+            background: #111; color: white; cursor: pointer; font-weight: 600; font-size: 12px;
         }
-        .btn:hover { background: #333; }
-        .btn-primary { background: white; color: black; border: 1px solid white; }
+        .btn:hover { background: #222; }
+        .btn-primary { background: white; color: black; border-color: white; }
         .btn-primary:hover { background: #ddd; }
-        .btn-danger { background: #e74c3c; border-color: #c0392b; }
         
         input, select, textarea { 
-            background: #111; 
-            border: 1px solid #333; 
-            color: white; 
-            padding: 10px; 
-            width: 100%; 
-            border-radius: 6px; 
-            font-family: 'Inter', sans-serif;
-            margin-bottom: 10px;
-        }
-        input:focus { border-color: #666; }
-
-        /* --- LOGIN SCREEN --- */
-        #login-layer { 
-            position: fixed; inset: 0; 
-            background: #000; 
-            z-index: 1000; 
-            display: flex; 
-            align-items: center; justify-content: center; 
-        }
-        .login-box {
-            width: 320px;
-            text-align: center;
+            background: #111; border: 1px solid #333; color: white; 
+            padding: 10px; width: 100%; border-radius: 4px; margin-bottom: 10px;
+            resize: none;
         }
 
-        /* --- MAIN LAYOUT (CSS GRID) --- */
-        #app-layer {
+        /* --- LAYOUT (GRID) --- */
+        #app-view {
             display: grid;
-            /* STRICT COLUMNS: ServerList | ChannelList | Chat | Members */
-            grid-template-columns: 72px 240px minmax(0, 1fr) 240px;
-            height: 100vh;
-            width: 100vw;
+            grid-template-columns: 70px 240px 1fr 240px; /* Sidebar | Info | Chat | Members */
+            height: 100vh; width: 100vw;
         }
 
-        /* COL 1: SERVERS */
+        /* 1. SERVERS */
         #col-servers { 
-            background: var(--bg-app); 
-            border-right: var(--border); 
-            padding: 15px 0; 
-            display: flex; flex-direction: column; align-items: center; gap: 10px; 
-            overflow-y: auto; 
+            background: var(--bg-app); border-right: var(--border); 
+            display: flex; flex-direction: column; align-items: center; 
+            padding: 12px 0; gap: 8px; overflow-y: auto; 
         }
-        .server-icon { 
-            width: 48px; height: 48px; 
-            border-radius: 50%; 
-            background: #222; 
-            display: flex; align-items: center; justify-content: center; 
-            font-weight: 800; font-size: 14px; 
-            cursor: pointer; 
-            transition: 0.2s; 
-            border: 1px solid #333;
-            overflow: hidden;
+        .srv-icon { 
+            width: 48px; height: 48px; border-radius: 50%; background: #111; border: 1px solid #333;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;
+            font-weight: 800; overflow: hidden;
         }
-        .server-icon:hover, .server-icon.active { border-radius: 16px; background: white; color: black; }
-        .server-icon img { width: 100%; height: 100%; object-fit: cover; }
+        .srv-icon:hover, .srv-icon.active { border-radius: 16px; background: white; color: black; }
+        .srv-icon img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* COL 2: CHANNELS & USER */
-        #col-channels { 
-            background: var(--bg-sidebar); 
-            border-right: var(--border); 
-            display: flex; flex-direction: column; 
+        /* 2. INFO (Middle Left) */
+        #col-info { 
+            background: var(--bg-sec); border-right: var(--border); 
+            display: flex; flex-direction: column; justify-content: space-between;
         }
-        .panel-header { 
-            height: 50px; 
-            border-bottom: var(--border); 
-            display: flex; align-items: center; 
-            padding: 0 15px; 
-            font-weight: 800; 
-            letter-spacing: -0.5px;
-        }
-        .channel-content { flex: 1; padding: 15px; }
+        .header { height: 50px; border-bottom: var(--border); display: flex; align-items: center; padding: 0 16px; font-weight: 700; }
         .user-bar { 
-            padding: 10px; 
-            border-top: var(--border); 
-            background: #050505; 
-            display: flex; align-items: center; gap: 10px; 
+            padding: 10px; background: #050505; border-top: var(--border); 
+            display: flex; align-items: center; gap: 10px;
         }
-        .user-bar img { width: 32px; height: 32px; border-radius: 50%; background: #333; }
-        
-        /* COL 3: CHAT */
+
+        /* 3. CHAT (Center) */
         #col-chat { 
-            background: var(--bg-app); 
-            display: flex; flex-direction: column; 
-            position: relative; 
+            background: var(--bg-app); display: flex; flex-direction: column; 
+            min-width: 0; /* CRITICAL: Allows text wrapping in grid */
         }
-        .chat-header {
-            height: 50px;
-            border-bottom: var(--border);
-            display: flex; align-items: center;
-            padding: 0 20px;
-            font-weight: 600;
+        .chat-list { 
+            flex: 1; overflow-y: auto; padding: 20px; 
+            display: flex; flex-direction: column; gap: 20px;
         }
-        .chat-feed { 
-            flex: 1; 
-            overflow-y: auto; 
-            padding: 20px; 
-            display: flex; flex-direction: column; gap: 20px; 
+        .input-zone { 
+            padding: 16px; border-top: var(--border); background: var(--bg-app);
+            display: flex; gap: 10px; align-items: flex-start;
         }
-        .input-area { 
-            padding: 20px; 
-            border-top: var(--border); 
-            display: flex; gap: 10px; 
-        }
+        #msg-input { height: 42px; max-height: 150px; margin: 0; padding: 10px; line-height: 1.4; }
 
         /* MESSAGES */
-        .msg { display: flex; gap: 15px; }
-        .msg-avatar { width: 40px; height: 40px; border-radius: 50%; background: #222; flex-shrink: 0; cursor: pointer; }
-        .msg-content { flex: 1; min-width: 0; /* Critical for grid wrapping */ }
-        .msg-meta { margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
-        .msg-name { font-weight: 700; cursor: pointer; }
-        .msg-name:hover { text-decoration: underline; }
-        .msg-time { font-size: 12px; color: #666; }
-        .msg-text { line-height: 1.5; color: #ccc; white-space: pre-wrap; word-wrap: break-word; }
+        .msg { display: flex; gap: 14px; }
+        .msg-av { width: 36px; height: 36px; border-radius: 50%; background: #222; flex-shrink: 0; cursor: pointer; }
+        .msg-body { min-width: 0; flex: 1; }
+        .msg-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .msg-user { font-weight: 600; cursor: pointer; }
+        .msg-user:hover { text-decoration: underline; }
+        .msg-time { font-size: 11px; color: var(--text-dim); }
+        .msg-text { white-space: pre-wrap; word-break: break-word; line-height: 1.5; color: #ddd; }
         
         /* TAGS */
-        .tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 800; color: #000; }
-        .tag.owner { background: var(--tag-owner); }
-        .tag.admin { background: var(--tag-admin); color: white; }
+        .tag { font-size: 9px; padding: 2px 5px; border-radius: 3px; font-weight: 800; color: black; }
+        .tag.own { background: var(--own); }
+        .tag.adm { background: var(--danger); color: white; }
 
-        /* ATTACHMENTS */
-        .attachment-img { max-width: 300px; max-height: 300px; border-radius: 8px; margin-top: 10px; border: 1px solid #333; }
-        .attachment-file { display: inline-block; margin-top: 10px; padding: 10px 15px; background: #111; border: 1px solid #333; border-radius: 6px; color: white; text-decoration: none; font-size: 14px; }
-
-        /* COL 4: MEMBERS */
+        /* 4. MEMBERS (Right) */
         #col-members { 
-            background: var(--bg-sidebar); 
-            border-left: var(--border); 
-            padding: 20px; 
-            overflow-y: auto; 
+            background: var(--bg-sec); border-left: var(--border); 
+            padding: 20px; overflow-y: auto;
         }
-        .member-item { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; cursor: pointer; padding: 5px; border-radius: 4px; }
-        .member-item:hover { background: #1a1a1a; }
-        
-        /* MODALS */
-        .modal-overlay { 
-            position: fixed; inset: 0; background: rgba(0,0,0,0.8); 
-            z-index: 2000; display: none; align-items: center; justify-content: center; 
-        }
-        .modal-box { 
-            background: #0a0a0a; border: 1px solid #333; 
-            padding: 25px; width: 400px; border-radius: 12px; 
-        }
-        .modal-header { font-weight: 800; font-size: 18px; margin-bottom: 20px; border-bottom: 1px solid #222; padding-bottom: 10px; }
+        .mem-item { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; opacity: 0.7; cursor: pointer; }
+        .mem-item:hover { opacity: 1; }
 
+        /* MODALS */
+        .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 999; }
+        .modal { background: #080808; border: 1px solid #333; padding: 24px; width: 360px; border-radius: 8px; }
+        .modal h3 { margin-bottom: 16px; font-weight: 700; border-bottom: 1px solid #222; padding-bottom: 10px; }
+
+        /* LOGIN */
+        #login-screen { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; align-items: center; justify-content: center; }
+        .login-box { width: 300px; text-align: center; }
     </style>
 </head>
 <body>
 
     <!-- LOGIN -->
-    <div id="login-layer">
+    <div id="login-screen">
         <div class="login-box">
-            <h2 style="margin-bottom: 10px;">Private Website</h2>
-            <p style="color: #666; font-size: 14px; margin-bottom: 20px;">Please identify yourself.</p>
-            
-            <input type="text" id="login-user" placeholder="Username">
-            <input type="password" id="login-pass" placeholder="Password">
-            
-            <button class="btn btn-primary" style="width: 100%;" onclick="doLogin()">Enter</button>
-            <div id="login-error" style="color: #e74c3c; margin-top: 15px; font-size: 13px;"></div>
+            <h2 style="margin-bottom: 20px;">Private Access</h2>
+            <input type="text" id="log-user" placeholder="Username">
+            <input type="password" id="log-pass" placeholder="Password">
+            <button class="btn btn-primary" style="width:100%" onclick="app.login()">AUTHENTICATE</button>
+            <p id="log-err" style="color: var(--danger); font-size: 12px; margin-top: 10px;"></p>
         </div>
     </div>
 
-    <!-- MAIN APP -->
-    <div id="app-layer" class="hidden">
+    <!-- APP -->
+    <div id="app-view" class="hidden">
         <!-- 1. SERVERS -->
         <div id="col-servers">
-            <div class="server-icon" onclick="openServerModal()" style="border-style: dashed; color: #666;">+</div>
-            <div style="width: 30px; height: 1px; background: #222;"></div>
-            <div id="server-list" style="display:flex; flex-direction:column; gap:10px; width:100%; align-items:center;"></div>
+            <div class="srv-icon" onclick="ui.openServerModal()" style="border-style: dashed; color: #666;">+</div>
+            <div style="width: 20px; height: 1px; background: #222;"></div>
+            <div id="server-list" style="display:flex; flex-direction:column; gap:8px; align-items:center; width:100%;"></div>
         </div>
 
-        <!-- 2. CHANNELS -->
-        <div id="col-channels">
-            <div class="panel-header" id="server-name">Select Server</div>
-            <div class="channel-content">
-                <div style="font-size: 12px; font-weight: 800; color: #666; margin-bottom: 10px;">CHANNELS</div>
-                <div style="padding: 8px; background: #1a1a1a; border-radius: 4px; color: white; cursor: pointer;"># general</div>
-                
-                <div id="admin-panel" class="hidden" style="margin-top: 30px;">
-                    <div style="font-size: 12px; font-weight: 800; color: #e74c3c; margin-bottom: 10px;">ADMIN CONTROLS</div>
-                    <button class="btn" style="width: 100%; text-align: left; font-size: 12px;" onclick="openOwnerModal()">+ Create Account</button>
-                </div>
-            </div>
+        <!-- 2. INFO (Empty middle part as requested, kept structure for layout) -->
+        <div id="col-info">
+            <div class="header" id="active-server-name">...</div>
+            
+            <!-- Spacer to push user bar down -->
+            <div style="flex:1;"></div>
+
             <div class="user-bar">
-                <img id="me-pfp" src="">
+                <img id="my-pfp" src="" style="width:32px; height:32px; border-radius:50%; background:#333;">
                 <div style="flex:1; overflow:hidden;">
-                    <div id="me-nick" style="font-weight:700; font-size:14px;">User</div>
-                    <div id="me-role" style="font-size:11px; color:#666;">Role</div>
+                    <div id="my-nick" style="font-weight:700; font-size:13px;"></div>
+                    <div id="my-role" style="font-size:10px; color: var(--text-dim);"></div>
                 </div>
-                <button onclick="openProfileModal()" style="background:none; border:none; color:#666; cursor:pointer;">⚙️</button>
-                <button onclick="logout()" style="background:none; border:none; color:#e74c3c; cursor:pointer;">✕</button>
+                <button class="btn" style="padding:4px 8px;" onclick="ui.openProfile()">⚙️</button>
+                <button class="btn" style="padding:4px 8px; color:var(--danger);" onclick="app.logout()">×</button>
             </div>
         </div>
 
         <!-- 3. CHAT -->
         <div id="col-chat">
-            <div class="chat-header">
-                <span style="color: #666; margin-right: 10px;">#</span> general
-                <span id="invite-code-display" style="margin-left: auto; font-size: 12px; background: #111; padding: 4px 8px; border-radius: 4px; display: none;"></span>
+            <div class="header">
+                <span style="color:var(--text-dim); margin-right:6px;">#</span> general
+                <span id="private-code" style="margin-left:auto; font-size:10px; border:1px solid #333; padding:2px 6px; border-radius:4px; display:none;"></span>
             </div>
-            <div id="chat-feed" class="chat-feed"></div>
-            <div class="input-area">
-                <input type="file" id="file-input" hidden onchange="handleUpload()">
-                <button class="btn" onclick="document.getElementById('file-input').click()">+</button>
-                <input type="text" id="chat-input" placeholder="Message #general" style="margin:0;">
-                <button class="btn btn-primary" onclick="sendMsg()">Send</button>
+            
+            <div id="chat-feed" class="chat-list"></div>
+            
+            <div class="input-zone">
+                <input type="file" id="file-bin" hidden>
+                <button class="btn" onclick="document.getElementById('file-bin').click()">📎</button>
+                <textarea id="msg-input" placeholder="Message... (Enter to send, Shift+Enter for new line)"></textarea>
             </div>
         </div>
 
         <!-- 4. MEMBERS -->
         <div id="col-members">
-            <div style="font-size: 12px; font-weight: 800; color: #666; margin-bottom: 15px;">ONLINE MEMBERS</div>
-            <div id="members-list"></div>
+            <div style="font-size:11px; font-weight:800; color:var(--text-dim); margin-bottom:12px;">ONLINE</div>
+            <div id="member-list"></div>
         </div>
     </div>
 
     <!-- MODALS -->
-
-    <!-- User Action Modal (Ban/Kick) -->
-    <div id="modal-user-action" class="modal-overlay">
-        <div class="modal-box">
-            <div class="modal-header">User Controls</div>
-            <div style="text-align: center; margin-bottom: 20px;">
-                <img id="act-pfp" src="" style="width:60px; height:60px; border-radius:50%; margin-bottom:10px;">
-                <h3 id="act-name">Username</h3>
-                <p id="act-role" style="color:#666; font-size:12px;">Role</p>
-            </div>
-            <div id="act-buttons" style="display: flex; gap: 10px;">
-                <!-- Buttons injected via JS -->
-            </div>
-            <button class="btn" style="width:100%; margin-top:10px;" onclick="closeModals()">Cancel</button>
-        </div>
-    </div>
-
-    <!-- Create/Join Server -->
-    <div id="modal-server" class="modal-overlay">
-        <div class="modal-box">
-            <div class="modal-header">Add Server</div>
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <button class="btn btn-primary" style="flex:1" onclick="document.getElementById('sect-create').classList.remove('hidden'); document.getElementById('sect-join').classList.add('hidden');">Create</button>
-                <button class="btn" style="flex:1" onclick="document.getElementById('sect-create').classList.add('hidden'); document.getElementById('sect-join').classList.remove('hidden');">Join</button>
-            </div>
-            
-            <div id="sect-create">
-                <input type="text" id="new-srv-name" placeholder="Server Name">
-                <input type="text" id="new-srv-img" placeholder="Icon URL (Optional)">
-                <select id="new-srv-type">
-                    <option value="public">Public</option>
-                    <option value="private">Private (Code)</option>
-                </select>
-                <button class="btn btn-primary" style="width:100%" onclick="createServer()">Create</button>
-            </div>
-
-            <div id="sect-join" class="hidden">
-                <input type="text" id="join-code" placeholder="Invite Code">
-                <button class="btn btn-primary" style="width:100%" onclick="joinServer()">Join</button>
-            </div>
-            <button class="btn" style="width:100%; margin-top:10px;" onclick="closeModals()">Close</button>
-        </div>
-    </div>
-
-    <!-- Profile Edit -->
-    <div id="modal-profile" class="modal-overlay">
-        <div class="modal-box">
-            <div class="modal-header">Edit Profile</div>
-            <input type="text" id="prof-nick" placeholder="Nickname">
-            <input type="text" id="prof-pfp" placeholder="Avatar URL">
-            <input type="text" id="prof-bio" placeholder="Bio">
-            <button class="btn btn-primary" style="width:100%" onclick="saveProfile()">Save</button>
-            <button class="btn" style="width:100%; margin-top:10px;" onclick="closeModals()">Cancel</button>
-        </div>
-    </div>
-
-    <!-- Owner Console -->
-    <div id="modal-owner" class="modal-overlay">
-        <div class="modal-box">
-            <div class="modal-header">Create Account</div>
-            <input type="text" id="mk-user" placeholder="Username">
-            <input type="text" id="mk-pass" placeholder="Password">
+    <div id="modal-owner" class="modal-bg">
+        <div class="modal">
+            <h3>Admin Console</h3>
+            <input type="text" id="mk-user" placeholder="New Username">
+            <input type="text" id="mk-pass" placeholder="New Password">
             <select id="mk-role">
                 <option value="user">User</option>
                 <option value="admin">Admin</option>
             </select>
-            <button class="btn btn-primary" style="width:100%" onclick="createAccount()">Create</button>
-            <button class="btn" style="width:100%; margin-top:10px;" onclick="closeModals()">Close</button>
+            <button class="btn btn-primary" style="width:100%" onclick="app.createAccount()">Create Account</button>
+            <button class="btn" style="width:100%; margin-top:8px;" onclick="ui.closeModals()">Close</button>
         </div>
     </div>
 
-    <!-- SCRIPT -->
+    <div id="modal-server" class="modal-bg">
+        <div class="modal">
+            <h3>Server</h3>
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <button class="btn btn-primary" style="flex:1" onclick="document.getElementById('mv-create').classList.remove('hidden');document.getElementById('mv-join').classList.add('hidden')">Create</button>
+                <button class="btn" style="flex:1" onclick="document.getElementById('mv-create').classList.add('hidden');document.getElementById('mv-join').classList.remove('hidden')">Join</button>
+            </div>
+            <div id="mv-create">
+                <input type="text" id="new-name" placeholder="Name">
+                <input type="text" id="new-img" placeholder="Image URL">
+                <select id="new-type"><option value="public">Public</option><option value="private">Private</option></select>
+                <button class="btn btn-primary" style="width:100%" onclick="app.createServer()">Launch</button>
+            </div>
+            <div id="mv-join" class="hidden">
+                <input type="text" id="join-code" placeholder="Invite Code">
+                <button class="btn btn-primary" style="width:100%" onclick="app.joinServer()">Join</button>
+            </div>
+            <button class="btn" style="width:100%; margin-top:8px;" onclick="ui.closeModals()">Cancel</button>
+        </div>
+    </div>
+
+    <div id="modal-user" class="modal-bg">
+        <div class="modal">
+            <div style="text-align:center;">
+                <img id="u-pfp" src="" style="width:64px; height:64px; border-radius:50%; margin-bottom:10px;">
+                <h3 id="u-name" style="border:none; margin:0;">User</h3>
+                <p id="u-role" style="color:var(--text-dim); font-size:12px; margin-bottom:15px;">Role</p>
+                <div id="u-actions"></div>
+            </div>
+            <button class="btn" style="width:100%; margin-top:10px;" onclick="ui.closeModals()">Close</button>
+        </div>
+    </div>
+
+    <div id="modal-profile" class="modal-bg">
+        <div class="modal">
+            <h3>Edit Profile</h3>
+            <input type="text" id="ed-nick" placeholder="Nickname">
+            <input type="text" id="ed-pfp" placeholder="Avatar URL">
+            <button class="btn btn-primary" style="width:100%" onclick="app.saveProfile()">Save</button>
+            <button class="btn" style="width:100%; margin-top:8px;" onclick="ui.closeModals()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, remove, get, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
         import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-        const firebaseConfig = {
+        const config = {
             apiKey: "AIzaSyAulcwmA2r2Z0Wv5mxyuWwQvPv05E8HvMU",
             authDomain: "dwellicon-42e72.firebaseapp.com",
             databaseURL: "https://dwellicon-42e72-default-rtdb.firebaseio.com",
@@ -356,369 +256,312 @@
             appId: "1:634657717896:web:27f246614fdb2c2398a93d"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        const storage = getStorage(app);
+        const fApp = initializeApp(config);
+        const db = getDatabase(fApp);
+        const storage = getStorage(fApp);
 
         // STATE
-        let currentUser = null;
-        let activeServerId = null;
-        let usersCache = {};
+        let me = null;
+        let activeSrv = null;
+        let users = {};
 
-        // --- AUTH ---
-        window.doLogin = async () => {
-            const u = document.getElementById('login-user').value.trim();
-            const p = document.getElementById('login-pass').value.trim();
+        // UI CONTROLLER
+        window.ui = {
+            openServerModal: () => {
+                const el = document.getElementById('modal-server');
+                el.style.display = 'flex';
+                if(me.role === 'user') {
+                    document.getElementById('mv-create').classList.add('hidden');
+                    document.getElementById('mv-join').classList.remove('hidden');
+                }
+            },
+            openProfile: () => document.getElementById('modal-profile').style.display = 'flex',
+            closeModals: () => document.querySelectorAll('.modal-bg').forEach(e => e.style.display = 'none'),
             
-            // Backdoor
-            if(u === "Kyson" && p === "12345678") {
-                finishLogin({ username: "Kyson", role: "owner", nick: "Kyson", pfp: "https://ui-avatars.com/api/?name=Kyson&background=f1c40f&color=fff" });
-                return;
+            renderUserModal: (uid) => {
+                const u = users[uid] || { nick: uid, role: 'user' };
+                document.getElementById('u-name').innerText = u.nick || uid;
+                document.getElementById('u-role').innerText = u.role.toUpperCase();
+                document.getElementById('u-pfp').src = u.pfp || `https://ui-avatars.com/api/?name=${uid}&background=222&color=fff`;
+                
+                const actDiv = document.getElementById('u-actions');
+                actDiv.innerHTML = '';
+                
+                // Permission Check
+                const canMod = (me.role === 'owner' || me.role === 'admin') && u.role !== 'owner' && uid !== me.username;
+                if(canMod) {
+                    const banBtn = document.createElement('button');
+                    banBtn.className = 'btn';
+                    banBtn.style.background = '#e74c3c';
+                    banBtn.style.width = '100%';
+                    banBtn.innerText = 'BAN USER';
+                    banBtn.onclick = () => app.banUser(uid);
+                    actDiv.appendChild(banBtn);
+                }
+                
+                document.getElementById('modal-user').style.display = 'flex';
             }
+        };
 
-            // DB Check
-            try {
-                const snap = await get(ref(db, 'users/' + u));
-                if(snap.exists()) {
-                    const data = snap.val();
-                    if(data.password === p) {
-                        if(data.banned) return alert("Account Banned.");
-                        finishLogin({ username: u, ...data });
-                    } else {
-                        document.getElementById('login-error').innerText = "Wrong password";
-                    }
+        // APP LOGIC
+        window.app = {
+            login: async () => {
+                const u = document.getElementById('log-user').value.trim();
+                const p = document.getElementById('log-pass').value.trim();
+                
+                if(u === "Kyson" && p === "12345678") {
+                    app.initSession({ username: "Kyson", role: "owner", nick: "Kyson", pfp: "" });
+                    return;
+                }
+
+                const s = await get(ref(db, 'users/' + u));
+                if(s.exists() && s.val().password === p) {
+                    if(s.val().banned) return alert("BANNED");
+                    app.initSession({ username: u, ...s.val() });
                 } else {
-                    document.getElementById('login-error').innerText = "User not found";
+                    document.getElementById('log-err').innerText = "Invalid Credentials";
                 }
-            } catch(e) { console.error(e); }
-        };
+            },
 
-        function finishLogin(user) {
-            currentUser = user;
-            localStorage.setItem('dwell_user', JSON.stringify(user));
-            
-            document.getElementById('login-layer').classList.add('hidden');
-            document.getElementById('app-layer').classList.remove('hidden');
-
-            // UI
-            document.getElementById('me-nick').innerText = user.nick || user.username;
-            document.getElementById('me-role').innerText = user.role.toUpperCase();
-            document.getElementById('me-pfp').src = user.pfp || `https://ui-avatars.com/api/?name=${user.username}&background=333&color=fff`;
-
-            if(user.role === 'owner' || user.role === 'admin') {
-                document.getElementById('admin-panel').classList.remove('hidden');
-            }
-
-            // Presence
-            const presRef = ref(db, `presence/${user.username}`);
-            set(presRef, true);
-            window.addEventListener('beforeunload', () => remove(presRef));
-
-            initListeners();
-        }
-
-        window.logout = () => {
-            if(currentUser) remove(ref(db, `presence/${currentUser.username}`));
-            localStorage.removeItem('dwell_user');
-            location.reload();
-        };
-
-        // --- LISTENERS ---
-        function initListeners() {
-            // Cache users for quick lookup
-            onValue(ref(db, 'users'), snap => usersCache = snap.val() || {});
-
-            // Servers
-            onValue(ref(db, 'servers'), snap => {
-                const list = document.getElementById('server-list');
-                list.innerHTML = "";
-                const all = snap.val() || {};
+            initSession: (user) => {
+                me = user;
+                localStorage.setItem('dw_sess', JSON.stringify(me));
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app-view').classList.remove('hidden');
                 
-                Object.entries(all).forEach(([id, s]) => {
-                    const allowed = s.type === 'public' || (currentUser.joinedServers && currentUser.joinedServers[id]) || currentUser.role === 'owner';
-                    if(allowed) {
-                        const div = document.createElement('div');
-                        div.className = `server-icon ${activeServerId === id ? 'active' : ''}`;
-                        if(s.img) div.innerHTML = `<img src="${s.img}">`;
-                        else div.innerText = s.name.substring(0,2).toUpperCase();
-                        
-                        div.onclick = () => loadServer(id, s);
-                        list.appendChild(div);
+                // Setup Me
+                document.getElementById('my-nick').innerText = me.nick || me.username;
+                document.getElementById('my-role').innerText = me.role.toUpperCase();
+                document.getElementById('my-pfp').src = me.pfp || `https://ui-avatars.com/api/?name=${me.username}&background=333&color=fff`;
+
+                // Presence
+                set(ref(db, `presence/${me.username}`), true);
+                window.onbeforeunload = () => remove(ref(db, `presence/${me.username}`));
+
+                app.listen();
+            },
+
+            logout: () => {
+                if(me) remove(ref(db, `presence/${me.username}`));
+                localStorage.removeItem('dw_sess');
+                location.reload();
+            },
+
+            listen: () => {
+                // Users
+                onValue(ref(db, 'users'), s => users = s.val() || {});
+                
+                // Servers
+                onValue(ref(db, 'servers'), s => {
+                    const list = document.getElementById('server-list');
+                    list.innerHTML = '';
+                    const all = s.val() || {};
+                    Object.entries(all).forEach(([id, data]) => {
+                        const canSee = data.type === 'public' || (me.joinedServers && me.joinedServers[id]) || me.role === 'owner';
+                        if(canSee) {
+                            const d = document.createElement('div');
+                            d.className = `srv-icon ${activeSrv === id ? 'active' : ''}`;
+                            d.onclick = () => app.loadServer(id, data);
+                            d.innerHTML = data.img ? `<img src="${data.img}">` : data.name.substring(0,2).toUpperCase();
+                            list.appendChild(d);
+                        }
+                    });
+                    if(!activeSrv && Object.keys(all).length) {
+                        const f = Object.keys(all)[0]; 
+                        app.loadServer(f, all[f]); // Simple auto-load
                     }
                 });
+            },
 
-                // Auto load first
-                if(!activeServerId && Object.keys(all).length > 0) {
-                    const first = Object.keys(all)[0];
-                    // Simple check if public/owned, skipping complex check for brevity
-                    loadServer(first, all[first]); 
+            loadServer: (id, data) => {
+                activeSrv = id;
+                document.querySelectorAll('.srv-icon').forEach(e => e.classList.remove('active'));
+                // (Visual update relies on re-render mostly but this helps)
+                
+                document.getElementById('active-server-name').innerText = data.name;
+                const codeEl = document.getElementById('private-code');
+                if(data.type === 'private' && (me.role === 'owner' || me.role === 'admin')) {
+                    codeEl.style.display = 'block';
+                    codeEl.innerText = `CODE: ${data.inviteCode}`;
+                } else {
+                    codeEl.style.display = 'none';
                 }
-            });
-        }
 
-        window.loadServer = (id, data) => {
-            activeServerId = id;
-            
-            // Update visual active state
-            document.querySelectorAll('.server-icon').forEach(el => el.classList.remove('active'));
-            // (Ideally re-render list, but this is fast enough)
-
-            document.getElementById('server-name').innerText = data.name;
-            
-            // Invite Code
-            const codeBox = document.getElementById('invite-code-display');
-            if(data.type === 'private' && (currentUser.role === 'admin' || currentUser.role === 'owner')) {
-                codeBox.style.display = 'block';
-                codeBox.innerText = `Code: ${data.inviteCode}`;
-            } else {
-                codeBox.style.display = 'none';
-            }
-
-            loadChat(id);
-            loadMembers();
-        };
-
-        // --- CHAT ---
-        function loadChat(srvId) {
-            const feed = document.getElementById('chat-feed');
-            feed.innerHTML = '';
-            
-            onValue(ref(db, `messages/${srvId}`), snap => {
+                // Chat
+                const feed = document.getElementById('chat-feed');
                 feed.innerHTML = '';
-                const msgs = snap.val() || {};
-                
-                Object.entries(msgs).forEach(([mid, m]) => {
-                    const u = usersCache[m.sender] || {};
-                    const nick = u.nick || m.sender;
-                    const pfp = u.pfp || `https://ui-avatars.com/api/?name=${m.sender}&background=333&color=fff`;
-                    const role = u.role || 'user';
-                    
-                    // TAGS
-                    let tagHtml = '';
-                    if(role === 'owner') tagHtml = `<span class="tag owner">OWNER</span>`;
-                    else if(role === 'admin') tagHtml = `<span class="tag admin">ADMIN</span>`;
+                onValue(ref(db, `messages/${id}`), snap => {
+                    feed.innerHTML = '';
+                    const msgs = snap.val() || {};
+                    Object.entries(msgs).forEach(([mid, m]) => {
+                        const u = users[m.sender] || {};
+                        const nick = u.nick || m.sender;
+                        const pfp = u.pfp || `https://ui-avatars.com/api/?name=${m.sender}&background=222&color=fff`;
+                        
+                        let roleTag = '';
+                        if(u.role === 'owner') roleTag = `<span class="tag own">OWNER</span>`;
+                        else if(u.role === 'admin') roleTag = `<span class="tag adm">ADMIN</span>`;
 
-                    const div = document.createElement('div');
-                    div.className = 'msg';
-                    div.innerHTML = `
-                        <img src="${pfp}" class="msg-avatar" onclick="openUserAction('${m.sender}')">
-                        <div class="msg-content">
-                            <div class="msg-meta">
-                                <span class="msg-name" onclick="openUserAction('${m.sender}')">${nick}</span>
-                                ${tagHtml}
-                                <span class="msg-time">${new Date(m.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                        const d = document.createElement('div');
+                        d.className = 'msg';
+                        d.innerHTML = `
+                            <img src="${pfp}" class="msg-av" onclick="ui.renderUserModal('${m.sender}')">
+                            <div class="msg-body">
+                                <div class="msg-head">
+                                    <span class="msg-user" onclick="ui.renderUserModal('${m.sender}')">${nick}</span>
+                                    ${roleTag}
+                                    <span class="msg-time">${new Date(m.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                                </div>
+                                <div class="msg-text">${m.text || ''}</div>
+                                ${m.att ? (m.att.type.includes('image') ? `<img src="${m.att.url}" style="max-width:300px; border-radius:8px; margin-top:5px;">` : `<a href="${m.att.url}" target="_blank" style="color:cyan; display:block; margin-top:5px;">📎 ${m.att.name}</a>`) : ''}
                             </div>
-                            <div class="msg-text">${m.text}</div>
-                            ${renderAttachment(m.attachment)}
-                        </div>
-                    `;
-                    feed.appendChild(div);
-                });
-                feed.scrollTop = feed.scrollHeight;
-            });
-        }
-
-        function renderAttachment(att) {
-            if(!att) return '';
-            if(att.type.startsWith('image')) return `<img src="${att.url}" class="attachment-img" onclick="window.open('${att.url}')">`;
-            return `<a href="${att.url}" target="_blank" class="attachment-file">📎 ${att.name}</a>`;
-        }
-
-        window.sendMsg = () => {
-            const inp = document.getElementById('chat-input');
-            const txt = inp.value.trim();
-            if(!txt || !activeServerId) return;
-            
-            push(ref(db, `messages/${activeServerId}`), {
-                sender: currentUser.username,
-                text: txt,
-                ts: Date.now()
-            });
-            inp.value = '';
-        };
-
-        window.handleUpload = async () => {
-            const file = document.getElementById('file-input').files[0];
-            if(!file) return;
-            if(file.size > 10 * 1024 * 1024) return alert("File too large (10MB limit)");
-
-            const inp = document.getElementById('chat-input');
-            const oldPlace = inp.placeholder;
-            inp.placeholder = "Uploading... Please wait.";
-            inp.disabled = true;
-
-            try {
-                const fileRef = sRef(storage, `uploads/${Date.now()}_${file.name}`);
-                await uploadBytes(fileRef, file);
-                const url = await getDownloadURL(fileRef);
-
-                push(ref(db, `messages/${activeServerId}`), {
-                    sender: currentUser.username,
-                    text: '',
-                    ts: Date.now(),
-                    attachment: { name: file.name, type: file.type, url: url }
-                });
-            } catch(e) {
-                alert("Upload failed");
-                console.error(e);
-            }
-            
-            inp.disabled = false;
-            inp.placeholder = oldPlace;
-            document.getElementById('file-input').value = '';
-        };
-
-        // --- MEMBERS & MODERATION ---
-        function loadMembers() {
-            onValue(ref(db, 'users'), async (snap) => {
-                const list = document.getElementById('members-list');
-                list.innerHTML = '';
-                
-                const users = snap.val() || {};
-                const presSnap = await get(ref(db, 'presence'));
-                const online = presSnap.val() || {};
-
-                Object.entries(users).forEach(([uid, u]) => {
-                    if(online[uid]) {
-                        const div = document.createElement('div');
-                        div.className = 'member-item';
-                        div.innerHTML = `
-                            <img src="${u.pfp || `https://ui-avatars.com/api/?name=${uid}`}" style="width:24px; height:24px; border-radius:50%;">
-                            <span style="font-size:14px; font-weight:600;">${u.nick || uid}</span>
-                            ${u.role === 'owner' ? '<span style="color:#f1c40f; margin-left:auto;">★</span>' : ''}
                         `;
-                        div.onclick = () => openUserAction(uid);
-                        list.appendChild(div);
-                    }
+                        feed.appendChild(d);
+                    });
+                    feed.scrollTop = feed.scrollHeight;
                 });
-            });
-        }
 
-        window.openUserAction = (targetUid) => {
-            const target = usersCache[targetUid];
-            if(!target) return;
+                app.loadMembers();
+            },
 
-            document.getElementById('act-name').innerText = target.nick || targetUid;
-            document.getElementById('act-role').innerText = (target.role || 'user').toUpperCase();
-            document.getElementById('act-pfp').src = target.pfp || `https://ui-avatars.com/api/?name=${targetUid}`;
-            
-            const btnContainer = document.getElementById('act-buttons');
-            btnContainer.innerHTML = '';
-
-            // Logic: Only Admins/Owners can ban. Cannot ban Owners.
-            const amIAdmin = currentUser.role === 'admin' || currentUser.role === 'owner';
-            const isTargetOwner = target.role === 'owner';
-
-            if(amIAdmin && !isTargetOwner && targetUid !== currentUser.username) {
-                btnContainer.innerHTML = `
-                    <button class="btn btn-danger" style="flex:1" onclick="banUser('${targetUid}')">BAN USER</button>
-                `;
-            } else {
-                btnContainer.innerHTML = `<p style="color:#666; font-size:12px; width:100%; text-align:center;">No actions available</p>`;
-            }
-
-            document.getElementById('modal-user-action').style.display = 'flex';
-        };
-
-        window.banUser = async (uid) => {
-            if(confirm(`Are you sure you want to BAN ${uid}?`)) {
-                await update(ref(db, `users/${uid}`), { banned: true });
-                alert("User banned.");
-                closeModals();
-            }
-        };
-
-        // --- SERVER & ACCOUNT CREATION ---
-        window.createServer = () => {
-            const n = document.getElementById('new-srv-name').value;
-            const img = document.getElementById('new-srv-img').value;
-            const type = document.getElementById('new-srv-type').value;
-            
-            if(!n) return;
-            const newRef = push(ref(db, 'servers'));
-            set(newRef, {
-                name: n, img, type, 
-                inviteCode: Math.random().toString(36).substring(2, 7).toUpperCase(),
-                owner: currentUser.username
-            });
-            closeModals();
-        };
-
-        window.joinServer = async () => {
-            const code = document.getElementById('join-code').value.trim().toUpperCase();
-            const snap = await get(ref(db, 'servers'));
-            let found = null;
-            snap.forEach(c => { if(c.val().inviteCode === code) found = c.key; });
-
-            if(found) {
-                await update(ref(db, `users/${currentUser.username}/joinedServers`), { [found]: true });
-                currentUser.joinedServers = currentUser.joinedServers || {};
-                currentUser.joinedServers[found] = true;
-                localStorage.setItem('dwell_user', JSON.stringify(currentUser));
-                alert("Joined!");
-                closeModals();
-            } else {
-                alert("Invalid Code");
-            }
-        };
-
-        window.createAccount = () => {
-            const u = document.getElementById('mk-user').value;
-            const p = document.getElementById('mk-pass').value;
-            const r = document.getElementById('mk-role').value;
-            
-            if(u && p) {
-                set(ref(db, `users/${u}`), {
-                    username: u, password: p, role: r, nick: u, pfp: ''
+            loadMembers: () => {
+                onValue(ref(db, 'users'), async (snap) => {
+                    const list = document.getElementById('member-list');
+                    list.innerHTML = '';
+                    const onSnap = await get(ref(db, 'presence'));
+                    const online = onSnap.val() || {};
+                    
+                    Object.entries(snap.val() || {}).forEach(([uid, u]) => {
+                        if(online[uid]) {
+                            const d = document.createElement('div');
+                            d.className = 'mem-item';
+                            d.onclick = () => ui.renderUserModal(uid);
+                            d.innerHTML = `
+                                <img src="${u.pfp || `https://ui-avatars.com/api/?name=${uid}`}" style="width:24px; height:24px; border-radius:50%;">
+                                <span style="font-weight:600; font-size:13px;">${u.nick || uid}</span>
+                                ${u.role === 'owner' ? '👑' : ''}
+                            `;
+                            list.appendChild(d);
+                        }
+                    });
                 });
-                alert("Account Created");
-                closeModals();
+            },
+
+            send: (txt, att=null) => {
+                if((!txt && !att) || !activeSrv) return;
+                push(ref(db, `messages/${activeSrv}`), {
+                    sender: me.username,
+                    text: txt,
+                    att: att,
+                    ts: Date.now()
+                });
+            },
+
+            upload: async () => {
+                const file = document.getElementById('file-bin').files[0];
+                if(!file) return;
+                
+                const box = document.getElementById('msg-input');
+                const oldPlace = box.placeholder;
+                box.placeholder = "UPLOADING... PLEASE WAIT";
+                box.disabled = true;
+
+                try {
+                    const r = sRef(storage, `up/${Date.now()}_${file.name}`);
+                    await uploadBytes(r, file);
+                    const url = await getDownloadURL(r);
+                    app.send(null, { name: file.name, type: file.type, url });
+                } catch(e) { alert("Upload Failed"); console.error(e); }
+                
+                box.placeholder = oldPlace;
+                box.disabled = false;
+                document.getElementById('file-bin').value = ''; // Reset
+            },
+
+            // ADMIN
+            banUser: (uid) => {
+                if(confirm(`Ban ${uid}?`)) {
+                    update(ref(db, `users/${uid}`), { banned: true });
+                    ui.closeModals();
+                }
+            },
+            createAccount: () => {
+                const u = document.getElementById('mk-user').value;
+                const p = document.getElementById('mk-pass').value;
+                const r = document.getElementById('mk-role').value;
+                if(u && p) {
+                    set(ref(db, `users/${u}`), { username: u, password: p, role: r, nick: u, pfp: '' });
+                    alert("User Created");
+                    ui.closeModals();
+                }
+            },
+            createServer: () => {
+                const n = document.getElementById('new-name').value;
+                if(!n) return;
+                const code = Math.random().toString(36).substring(2,8).toUpperCase();
+                const r = push(ref(db, 'servers'));
+                set(r, {
+                    name: n, img: document.getElementById('new-img').value,
+                    type: document.getElementById('new-type').value,
+                    inviteCode: code, owner: me.username
+                });
+                ui.closeModals();
+            },
+            joinServer: async () => {
+                const c = document.getElementById('join-code').value.trim().toUpperCase();
+                const s = await get(ref(db, 'servers'));
+                let id = null;
+                s.forEach(x => { if(x.val().inviteCode === c) id = x.key; });
+                if(id) {
+                    await update(ref(db, `users/${me.username}/joinedServers`), { [id]: true });
+                    me.joinedServers = me.joinedServers || {};
+                    me.joinedServers[id] = true;
+                    localStorage.setItem('dw_sess', JSON.stringify(me));
+                    alert("Joined");
+                    ui.closeModals();
+                } else alert("Invalid Code");
+            },
+            saveProfile: () => {
+                const n = document.getElementById('ed-nick').value;
+                const p = document.getElementById('ed-pfp').value;
+                update(ref(db, `users/${me.username}`), { nick: n, pfp: p });
+                me.nick = n; me.pfp = p;
+                localStorage.setItem('dw_sess', JSON.stringify(me));
+                document.getElementById('my-nick').innerText = n;
+                document.getElementById('my-pfp').src = p;
+                ui.closeModals();
             }
         };
 
-        // --- PROFILE ---
-        window.saveProfile = () => {
-            const n = document.getElementById('prof-nick').value;
-            const p = document.getElementById('prof-pfp').value;
-            const b = document.getElementById('prof-bio').value;
-            
-            update(ref(db, `users/${currentUser.username}`), { nick: n, pfp: p, bio: b });
-            currentUser.nick = n; currentUser.pfp = p;
-            localStorage.setItem('dwell_user', JSON.stringify(currentUser));
-            
-            // update UI
-            document.getElementById('me-nick').innerText = n;
-            document.getElementById('me-pfp').src = p || `https://ui-avatars.com/api/?name=${currentUser.username}`;
-            closeModals();
-        };
-
-        // --- UTILS ---
-        window.openServerModal = () => {
-            if(currentUser.role === 'user') {
-                // Users can only join
-                document.getElementById('modal-server').style.display = 'flex';
-                document.getElementById('sect-create').classList.add('hidden');
-                document.getElementById('sect-join').classList.remove('hidden');
-            } else {
-                document.getElementById('modal-server').style.display = 'flex';
+        // EVENTS
+        document.getElementById('msg-input').addEventListener('keydown', e => {
+            if(e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                app.send(e.target.value);
+                e.target.value = '';
             }
-        };
-        window.openOwnerModal = () => document.getElementById('modal-owner').style.display = 'flex';
-        window.openProfileModal = () => document.getElementById('modal-profile').style.display = 'flex';
-        window.closeModals = () => document.querySelectorAll('.modal-overlay').forEach(e => e.style.display = 'none');
+        });
+        
+        document.getElementById('file-bin').addEventListener('change', app.upload);
 
-        // Auto-Login
-        const saved = localStorage.getItem('dwell_user');
-        if(saved) {
-            const u = JSON.parse(saved);
-            // Check ban status
+        // ALT + X for Admin
+        document.addEventListener('keydown', e => {
+            if(e.altKey && e.key.toLowerCase() === 'x') {
+                if(me && me.role === 'owner') {
+                    document.getElementById('modal-owner').style.display = 'flex';
+                }
+            }
+        });
+
+        // Init
+        const sess = localStorage.getItem('dw_sess');
+        if(sess) {
+            const u = JSON.parse(sess);
             get(ref(db, `users/${u.username}`)).then(s => {
                 if(s.exists() && s.val().banned) {
-                    alert("Banned");
-                    localStorage.removeItem('dwell_user');
-                } else {
-                    finishLogin(u);
-                }
+                    localStorage.removeItem('dw_sess');
+                    location.reload();
+                } else app.initSession(u);
             });
         }
 
