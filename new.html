@@ -3,254 +3,268 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dwellicon Chat</title>
+    <title>Dwellicon</title>
     <style>
         /* --- CSS RESET & VARIABLES --- */
         :root {
-            --bg-dark: #202225;
-            --bg-sidebar: #2f3136;
-            --bg-chat: #36393f;
-            --bg-member: #2f3136;
-            --bg-input: #40444b;
-            --text-main: #dcddde;
-            --text-header: #ffffff;
-            --accent: #5865F2;
-            --danger: #ed4245;
-            --success: #3ba55c;
-            --hover: #393c43;
+            --bg-app: #1a1a2e;
+            --bg-panel: #16213e;
+            --bg-input: #0f3460;
+            --accent: #e94560;
+            --accent-hover: #c22a42;
+            --text-main: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: var(--bg-dark); color: var(--text-main); height: 100vh; overflow: hidden; }
-        
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+        body { 
+            font-family: 'Courier New', Courier, monospace; /* Retro-tech font */
+            background-color: var(--bg-app); 
+            color: var(--text-main); 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+
+        /* --- LIVE BACKGROUND (LOGIN) --- */
+        .live-bg {
+            position: absolute; inset: 0; z-index: -1;
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
         /* --- UTILS --- */
         .hidden { display: none !important; }
-        .btn { padding: 8px 16px; border-radius: 4px; border: none; cursor: pointer; color: white; font-weight: bold; transition: 0.2s; }
-        .btn-primary { background-color: var(--accent); }
-        .btn-primary:hover { background-color: #4752c4; }
-        .btn-danger { background-color: var(--danger); }
-        .btn-sm { padding: 4px 8px; font-size: 12px; }
-        input, select, textarea { background: #202225; border: 1px solid #202225; color: white; padding: 8px; border-radius: 4px; width: 100%; outline: none; margin-bottom: 10px; }
+        .btn { padding: 10px 20px; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; border-radius: 4px; text-transform: uppercase; letter-spacing: 1px; }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 0 10px var(--accent); }
+        .btn-danger { background: #ff4757; color: white; }
+        
+        input, select { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 10px; width: 100%; margin-bottom: 10px; border-radius: 4px; }
         input:focus { border-color: var(--accent); }
 
         /* --- LOGIN SCREEN --- */
-        #login-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-chat); z-index: 1000; display: flex; align-items: center; justify-content: center; background-image: url('https://i.imgur.com/X9f9d4k.png'); background-size: cover; }
-        .login-box { background: #2f3136; padding: 30px; border-radius: 8px; width: 400px; box-shadow: 0 2px 10px 0 rgba(0,0,0,0.2); text-align: center; }
-        .login-box h2 { color: white; margin-bottom: 20px; }
+        #login-layer { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 350px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            text-align: center;
+        }
 
-        /* --- MAIN LAYOUT --- */
-        #app-layer { display: flex; height: 100vh; }
-        
-        /* 1. Server Sidebar (Left) */
-        #server-sidebar { width: 72px; background: #202225; display: flex; flex-direction: column; align-items: center; padding: 12px 0; overflow-y: auto; gap: 8px; }
-        .server-icon { width: 48px; height: 48px; border-radius: 50%; background-color: #36393f; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; color: white; font-weight: bold; font-size: 14px; overflow: hidden; position: relative; }
-        .server-icon:hover { border-radius: 16px; background-color: var(--accent); }
-        .server-icon.active { border-radius: 16px; background-color: var(--accent); }
+        /* --- APP GRID LAYOUT (FIXED STRUCTURE) --- */
+        #app-layer {
+            display: grid;
+            grid-template-columns: 80px 250px 1fr 250px; /* Strict widths */
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Col 1: Servers */
+        #col-servers { background: #0f111a; border-right: var(--border); display: flex; flex-direction: column; align-items: center; padding: 15px 0; gap: 15px; overflow-y: auto; }
+        .server-icon { 
+            width: 50px; height: 50px; border-radius: 50%; background: #333; 
+            display: flex; align-items: center; justify-content: center; 
+            cursor: pointer; transition: 0.3s; border: 2px solid transparent;
+            font-weight: bold; font-size: 18px; color: white; overflow: hidden;
+        }
+        .server-icon:hover { border-color: var(--accent); border-radius: 15px; }
+        .server-icon.active { border-color: var(--accent); border-radius: 15px; background: var(--accent); }
         .server-icon img { width: 100%; height: 100%; object-fit: cover; }
-        .sep { width: 32px; height: 2px; background-color: #36393f; margin: 0 auto; }
 
-        /* 2. Channel/Info Sidebar (Middle-Left) */
-        #channel-sidebar { width: 240px; background: var(--bg-sidebar); display: flex; flex-direction: column; }
-        .server-header { padding: 12px 16px; border-bottom: 1px solid #202225; font-weight: bold; color: white; box-shadow: 0 1px 0 rgba(4,4,5,0.2); display: flex; justify-content: space-between; align-items: center; }
-        .user-area { margin-top: auto; background: #292b2f; padding: 10px; display: flex; align-items: center; gap: 10px; }
-        .user-pfp-sm { width: 32px; height: 32px; border-radius: 50%; background: gray; object-fit: cover; }
-        .user-details { flex: 1; overflow: hidden; }
-        .username { display: block; font-weight: bold; color: white; font-size: 14px; }
-        .user-discriminator { display: block; color: #b9bbbe; font-size: 12px; }
-        .server-actions { padding: 10px; display: flex; flex-direction: column; gap: 5px; }
-
-        /* 3. Chat Area (Center) */
-        #chat-area { flex: 1; background: var(--bg-chat); display: flex; flex-direction: column; position: relative; }
-        .chat-header { padding: 12px 16px; border-bottom: 1px solid #26272d; font-weight: bold; color: white; display: flex; align-items: center; box-shadow: 0 1px 0 rgba(4,4,5,0.06); }
-        .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+        /* Col 2: Channels/Info */
+        #col-channels { background: var(--bg-panel); display: flex; flex-direction: column; border-right: var(--border); }
+        .panel-header { padding: 20px; border-bottom: var(--border); font-weight: bold; letter-spacing: 1px; height: 60px; display: flex; align-items: center; justify-content: space-between; }
+        .channel-list { padding: 20px; flex: 1; }
+        .user-bar { padding: 15px; background: rgba(0,0,0,0.2); display: flex; align-items: center; gap: 10px; }
+        .user-bar img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--accent); }
         
-        /* Messages */
-        .msg { display: flex; gap: 16px; padding: 2px 0; }
-        .msg:hover { background: #32353b; }
-        .msg-avatar { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; background: #5865F2; object-fit: cover; }
-        .msg-content { flex: 1; }
-        .msg-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-        .msg-user { color: white; font-weight: 500; cursor: pointer; }
-        .msg-user:hover { text-decoration: underline; }
-        .msg-date { color: #72767d; font-size: 12px; }
-        .msg-text { color: #dcddde; white-space: pre-wrap; line-height: 1.375rem; }
-        .msg-attachment { margin-top: 8px; max-width: 400px; border-radius: 4px; overflow: hidden; }
-        .msg-attachment img { max-width: 100%; height: auto; display: block; }
-        .msg-attachment-file { background: #2f3136; padding: 10px; border: 1px solid #202225; border-radius: 4px; display: flex; align-items: center; gap: 10px; color: var(--accent); text-decoration: none; width: fit-content; }
+        /* Col 3: Chat */
+        #col-chat { background: var(--bg-app); display: flex; flex-direction: column; position: relative; }
+        .chat-feed { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
         
-        /* Reactions & Tools */
-        .msg-tools { display: flex; gap: 5px; margin-top: 5px; }
-        .reaction-btn { background: #2f3136; border: 1px solid transparent; color: #b9bbbe; border-radius: 4px; padding: 2px 6px; font-size: 12px; cursor: pointer; }
-        .reaction-btn:hover { border-color: #72767d; }
-        .reaction-btn.active { background: rgba(88, 101, 242, 0.15); border-color: var(--accent); color: var(--accent); }
-        .mod-btn { color: var(--danger); font-size: 10px; cursor: pointer; margin-left: 10px; opacity: 0; }
-        .msg:hover .mod-btn { opacity: 1; }
+        .msg { display: flex; gap: 15px; animation: fadeIn 0.2s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .msg-avatar { width: 40px; height: 40px; border-radius: 50%; background: #333; object-fit: cover; flex-shrink: 0; }
+        .msg-content { flex: 1; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; }
+        .msg-top { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8em; color: var(--text-muted); }
+        .msg-name { color: var(--accent); font-weight: bold; font-size: 1em; cursor: pointer; }
+        
+        /* Attachments */
+        .attachment-img { max-width: 300px; max-height: 300px; border-radius: 8px; margin-top: 10px; border: 1px solid #444; }
+        .attachment-file { display: block; margin-top: 10px; padding: 10px; background: #222; border-radius: 4px; color: var(--accent); text-decoration: none; border: 1px solid var(--accent); }
 
-        /* Input */
-        .chat-input-wrapper { padding: 0 16px 24px; background: var(--bg-chat); }
-        .chat-input-box { background: var(--bg-input); border-radius: 8px; padding: 10px; display: flex; align-items: center; gap: 10px; }
-        .file-upload-btn { width: 24px; height: 24px; background: #b9bbbe; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #40444b; font-weight: bold; cursor: pointer; font-size: 20px; line-height: 0; }
-        #message-input { background: transparent; border: none; margin: 0; padding: 0; height: 20px; color: white; font-size: 1rem; }
+        /* Input Area */
+        .input-zone { padding: 20px; background: var(--bg-panel); display: flex; gap: 10px; border-top: var(--border); }
+        .upload-btn { width: 40px; height: 40px; border-radius: 50%; background: #333; color: white; border: none; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; }
+        .upload-btn:hover { background: var(--text-main); color: black; }
+        #msg-input { margin: 0; background: var(--bg-app); border: none; flex: 1; }
 
-        /* 4. Member Sidebar (Right) */
-        #member-sidebar { width: 240px; background: #2f3136; padding: 20px 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
-        .member-group-title { color: #96989d; font-size: 12px; font-weight: bold; text-transform: uppercase; margin-bottom: 10px; padding-left: 8px; }
-        .member-card { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 4px; cursor: pointer; color: #8e9297; opacity: 0.7; }
-        .member-card.online { opacity: 1; color: #dcddde; }
-        .member-card:hover { background-color: var(--hover); color: white; }
-        .member-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); object-fit: cover; }
-        .member-status { width: 10px; height: 10px; border-radius: 50%; background: gray; border: 2px solid #2f3136; position: absolute; bottom: -2px; right: -2px; }
-        .online .member-status { background: var(--success); }
+        /* Col 4: Members */
+        #col-members { background: var(--bg-panel); border-left: var(--border); padding: 20px; overflow-y: auto; }
+        .member-item { display: flex; align-items: center; gap: 10px; padding: 8px; margin-bottom: 5px; cursor: pointer; opacity: 0.7; }
+        .member-item:hover { opacity: 1; background: rgba(255,255,255,0.05); border-radius: 4px; }
+        .status-dot { width: 8px; height: 8px; background: #2ecc71; border-radius: 50%; }
 
-        /* --- MODALS --- */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; display: none; align-items: center; justify-content: center; }
-        .modal { background: #36393f; padding: 20px; border-radius: 8px; width: 400px; color: white; }
-        .modal-header { font-size: 20px; font-weight: bold; margin-bottom: 15px; }
-        .close-modal { float: right; cursor: pointer; color: #aaa; }
+        /* MODALS */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000; display: none; align-items: center; justify-content: center; }
+        .modal-box { background: #16213e; padding: 25px; border-radius: 8px; border: 1px solid var(--accent); width: 400px; max-width: 90%; }
+        .modal-header { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; color: var(--accent); display: flex; justify-content: space-between; }
+        .close-x { cursor: pointer; }
+
     </style>
 </head>
 <body>
 
-    <!-- 1. LOGIN -->
+    <!-- LIVE BACKGROUND -->
+    <div class="live-bg"></div>
+
+    <!-- 1. LOGIN SCREEN -->
     <div id="login-layer">
-        <div class="login-box">
-            <h2>Welcome Back!</h2>
-            <p style="color:#b9bbbe; margin-bottom: 20px;">We're so excited to see you again!</p>
-            <div style="text-align: left;">
-                <label style="font-size:12px; font-weight:bold; color:#b9bbbe; text-transform:uppercase;">Username</label>
-                <input type="text" id="login-user">
-                <label style="font-size:12px; font-weight:bold; color:#b9bbbe; text-transform:uppercase;">Password</label>
-                <input type="password" id="login-pass">
-            </div>
-            <button class="btn btn-primary" style="width: 100%;" onclick="handleLogin()">Log In</button>
-            <p id="login-error" style="color: var(--danger); margin-top: 10px; font-size: 14px;"></p>
+        <div class="glass-panel">
+            <h1 style="color:white; margin-bottom:10px; font-size: 2em; text-shadow: 0 0 10px rgba(0,0,0,0.5);">DWELLICON</h1>
+            <p style="color: #ddd; margin-bottom: 20px; font-size: 0.9em;">Restricted Access Terminal</p>
+            
+            <input type="text" id="login-user" placeholder="IDENTITY">
+            <input type="password" id="login-pass" placeholder="PASSPHRASE">
+            
+            <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="attemptLogin()">Connect</button>
+            <div id="login-msg" style="color: #ff4757; margin-top: 10px; font-size: 0.8em;"></div>
         </div>
     </div>
 
-    <!-- 2. APP INTERFACE -->
+    <!-- 2. MAIN APP INTERFACE -->
     <div id="app-layer" class="hidden">
-        <!-- Server List -->
-        <nav id="server-sidebar">
-            <div class="server-icon" onclick="openJoinServerModal()">+</div>
-            <div class="sep"></div>
-            <div id="server-list-container"></div>
-        </nav>
-
-        <!-- Channel/Server Info -->
-        <aside id="channel-sidebar">
-            <div class="server-header" id="current-server-name">Home</div>
-            
-            <!-- Admin Tools Section -->
-            <div class="server-actions" id="admin-tools-panel">
-                <!-- Injected via JS if admin -->
+        <!-- Column 1: Server List -->
+        <div id="col-servers">
+            <div class="server-icon" onclick="openServerModal()" style="color: #2ecc71; border: 2px dashed #2ecc71;">+</div>
+            <div style="width: 50%; height: 1px; background: #444; margin: 5px 0;"></div>
+            <div id="server-list-wrapper" style="display: flex; flex-direction: column; gap: 10px; width: 100%; align-items: center;">
+                <!-- Servers injected here -->
             </div>
+        </div>
 
-            <div class="user-area">
-                <img id="current-user-pfp" src="" class="user-pfp-sm">
-                <div class="user-details">
-                    <span id="current-user-nick" class="username">User</span>
-                    <span id="current-user-role" class="user-discriminator">Role</span>
-                </div>
-                <button onclick="openProfileModal()" class="btn btn-sm" style="background:#4f545c;">⚙️</button>
-                <button onclick="logout()" class="btn btn-sm" style="background:var(--danger);">Exit</button>
+        <!-- Column 2: Info/Settings -->
+        <div id="col-channels">
+            <div class="panel-header">
+                <span id="active-server-name">SELECT SERVER</span>
+                <span id="server-invite-code" style="font-size: 0.7em; color: #2ecc71; display:none; border: 1px solid #2ecc71; padding: 2px 4px;"></span>
             </div>
-        </aside>
-
-        <!-- Chat -->
-        <main id="chat-area">
-            <div class="chat-header">
-                <span style="font-size: 24px; color:#72767d; margin-right: 8px;">#</span>
-                <span id="chat-channel-name">general</span>
-                <span id="private-code-display" style="margin-left: auto; font-size: 12px; color: var(--success); display: none; background: #202225; padding: 4px 8px; border-radius: 4px;"></span>
-            </div>
-            
-            <div id="messages-container" class="chat-messages">
-                <!-- Messages Go Here -->
-            </div>
-
-            <div class="chat-input-wrapper">
-                <div class="chat-input-box">
-                    <div class="file-upload-btn" onclick="document.getElementById('file-input').click()">+</div>
-                    <input type="file" id="file-input" class="hidden" onchange="handleFileSelect()">
-                    <input type="text" id="message-input" placeholder="Message #general">
+            <div class="channel-list">
+                <div style="color: var(--text-muted); font-size: 0.8em; margin-bottom: 10px;">TEXT CHANNELS</div>
+                <div style="padding: 8px; background: rgba(233, 69, 96, 0.1); color: var(--accent); border-radius: 4px; cursor: pointer;"># general</div>
+                
+                <!-- Admin Tools -->
+                <div id="admin-tools-area" style="margin-top: 30px; border-top: 1px solid #333; padding-top: 20px;" class="hidden">
+                    <div style="color: #ff4757; font-size: 0.8em; margin-bottom: 10px;">ADMIN TERMINAL</div>
+                    <button class="btn btn-primary" style="width:100%; font-size: 0.7em;" onclick="openOwnerConsole()">User Manager</button>
                 </div>
             </div>
-        </main>
+            <div class="user-bar">
+                <img id="my-pfp" src="">
+                <div style="flex: 1;">
+                    <div id="my-nick" style="font-weight: bold; font-size: 0.9em;">User</div>
+                    <div id="my-role" style="font-size: 0.7em; color: var(--accent);">Loading...</div>
+                </div>
+                <button onclick="openProfile()" style="background:none; border:none; color:#aaa; cursor:pointer;">⚙️</button>
+                <button onclick="logout()" style="background:none; border:none; color:#ff4757; cursor:pointer;">⏻</button>
+            </div>
+        </div>
 
-        <!-- Members -->
-        <aside id="member-sidebar">
-            <!-- Members Go Here -->
-        </aside>
+        <!-- Column 3: Chat -->
+        <div id="col-chat">
+            <div class="chat-feed" id="message-feed">
+                <!-- Messages -->
+            </div>
+            <div class="input-zone">
+                <input type="file" id="file-upload" hidden onchange="uploadAndSend()">
+                <button class="upload-btn" onclick="document.getElementById('file-upload').click()">📎</button>
+                <input type="text" id="chat-input" placeholder="Transmission...">
+                <button class="btn btn-primary" onclick="sendText()">SEND</button>
+            </div>
+        </div>
+
+        <!-- Column 4: Members -->
+        <div id="col-members">
+            <div style="color: var(--text-muted); font-size: 0.8em; margin-bottom: 15px;">ONLINE OPERATIVES</div>
+            <div id="members-list-wrapper">
+                <!-- Members -->
+            </div>
+        </div>
     </div>
 
-    <!-- 3. MODALS -->
-    <!-- Profile Modal -->
+    <!-- MODALS -->
+    
+    <!-- Server Create/Join -->
+    <div id="modal-server" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header"><span>Server Operations</span> <span class="close-x" onclick="closeModals()">✕</span></div>
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <button class="btn btn-primary" style="flex:1" onclick="toggleServerMode('create')">Create</button>
+                <button class="btn" style="flex:1; background:#333; color:white;" onclick="toggleServerMode('join')">Join</button>
+            </div>
+
+            <!-- Create Form -->
+            <div id="form-create">
+                <input type="text" id="new-srv-name" placeholder="Server Name">
+                <input type="text" id="new-srv-img" placeholder="Icon URL (Optional)">
+                <select id="new-srv-type">
+                    <option value="public">Public (Listed)</option>
+                    <option value="private">Private (Code Required)</option>
+                </select>
+                <button class="btn btn-primary" style="width:100%" onclick="createServer()">Launch Server</button>
+            </div>
+
+            <!-- Join Form -->
+            <div id="form-join" class="hidden">
+                <input type="text" id="join-code" placeholder="Enter Invite Code">
+                <button class="btn btn-primary" style="width:100%" onclick="joinServer()">Connect</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile -->
     <div id="modal-profile" class="modal-overlay">
-        <div class="modal">
-            <span class="close-modal" onclick="closeModals()">✕</span>
-            <div class="modal-header">Edit Profile</div>
+        <div class="modal-box">
+            <div class="modal-header"><span>Edit Identity</span> <span class="close-x" onclick="closeModals()">✕</span></div>
             <label>Nickname</label> <input type="text" id="edit-nick">
-            <label>Bio</label> <textarea id="edit-bio" rows="3" style="width:100%; background:#202225; color:white; border:none; padding:8px;"></textarea>
-            <label>Profile Picture URL</label> <input type="text" id="edit-pfp">
-            <button class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
+            <label>Bio</label> <input type="text" id="edit-bio">
+            <label>Avatar URL</label> <input type="text" id="edit-pfp">
+            <button class="btn btn-primary" onclick="saveProfile()">Update Identity</button>
         </div>
     </div>
 
-    <!-- Create Server Modal -->
-    <div id="modal-create-server" class="modal-overlay">
-        <div class="modal">
-            <span class="close-modal" onclick="closeModals()">✕</span>
-            <div class="modal-header">Create a Server</div>
-            <label>Server Name</label> <input type="text" id="new-server-name">
-            <label>Server Image URL</label> <input type="text" id="new-server-img">
-            <label>Visibility</label>
-            <select id="new-server-type">
-                <option value="public">Public (Everyone sees)</option>
-                <option value="private">Private (Invite Code Only)</option>
-            </select>
-            <button class="btn btn-primary" onclick="createServer()">Create Server</button>
-        </div>
-    </div>
-
-    <!-- Join Server Modal -->
-    <div id="modal-join-server" class="modal-overlay">
-        <div class="modal">
-            <span class="close-modal" onclick="closeModals()">✕</span>
-            <div class="modal-header">Add a Server</div>
-            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                <button class="btn btn-primary" style="flex:1" onclick="openCreateServerModal()">Create New</button>
-                <button class="btn" style="flex:1; background:#4f545c;" onclick="document.getElementById('join-section').classList.remove('hidden')">Join Private</button>
-            </div>
-            <div id="join-section" class="hidden">
-                <label>Invite Code</label> <input type="text" id="join-code" placeholder="ENTER-CODE-HERE">
-                <button class="btn btn-success" style="width:100%; background:var(--success);" onclick="joinServer()">Join Server</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Owner Admin Maker Modal -->
-    <div id="modal-admin-maker" class="modal-overlay">
-        <div class="modal">
-            <span class="close-modal" onclick="closeModals()">✕</span>
-            <div class="modal-header">Owner Console</div>
-            <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">Create a new account. Only Kyson can do this.</p>
-            <label>Username</label> <input type="text" id="mk-user">
-            <label>Password</label> <input type="text" id="mk-pass">
-            <label>Role</label>
+    <!-- Owner Console -->
+    <div id="modal-owner" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header"><span>Whitelist Manager</span> <span class="close-x" onclick="closeModals()">✕</span></div>
+            <input type="text" id="mk-user" placeholder="New Username">
+            <input type="text" id="mk-pass" placeholder="New Password">
             <select id="mk-role">
-                <option value="user">User (Chat Only)</option>
-                <option value="admin">Admin (Kick/Ban/Servers)</option>
+                <option value="user">Standard User</option>
+                <option value="admin">Administrator</option>
             </select>
-            <button class="btn btn-primary" onclick="ownerCreateAccount()">Create Account</button>
+            <button class="btn btn-danger" style="width:100%" onclick="ownerCreateUser()">Authorize User</button>
         </div>
     </div>
 
-    <!-- SCRIPT -->
+    <!-- JAVASCRIPT LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, remove, get, update, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue, remove, get, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
         import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-        // --- CONFIG ---
+        // --- FIREBASE CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyAulcwmA2r2Z0Wv5mxyuWwQvPv05E8HvMU",
             authDomain: "dwellicon-42e72.firebaseapp.com",
@@ -265,369 +279,422 @@
         const db = getDatabase(app);
         const storage = getStorage(app);
 
-        // --- STATE ---
-        let currentUser = null;
-        let currentServerId = null;
-        let usersCache = {};
+        // --- GLOBAL STATE ---
+        let me = null; // Current user object
+        let currentServer = null; // ID string
+        let usersCache = {}; // Map of uid -> userData
 
-        // --- AUTH ---
-        window.handleLogin = async () => {
+        // --- AUTHENTICATION ---
+        window.attemptLogin = async () => {
             const u = document.getElementById('login-user').value.trim();
             const p = document.getElementById('login-pass').value.trim();
+            const err = document.getElementById('login-msg');
 
-            // 1. Hardcoded Backdoor for Owner
+            if(!u || !p) { err.innerText = "MISSING CREDENTIALS"; return; }
+
+            // 1. KYSON BACKDOOR (Hardcoded Owner)
             if(u === "Kyson" && p === "12345678") {
-                loginSuccess({
+                finalizeLogin({
                     username: "Kyson",
                     role: "owner",
-                    nick: "Kyson",
-                    pfp: "https://cdn-icons-png.flaticon.com/512/147/147142.png",
-                    bio: "The Owner"
+                    nick: "Kyson (Owner)",
+                    pfp: "https://cdn-icons-png.flaticon.com/512/2922/2922506.png",
+                    bio: "System Architect"
                 });
                 return;
             }
 
-            // 2. Whitelist Check
-            const snapshot = await get(ref(db, 'users/' + u));
-            if (snapshot.exists()) {
-                const data = snapshot.val();
-                if (data.password === p) {
-                    if(data.banned) {
-                        document.getElementById('login-error').innerText = "You have been BANNED.";
-                        return;
+            // 2. DATABASE WHITELIST CHECK
+            try {
+                const snap = await get(ref(db, 'users/' + u));
+                if(snap.exists()) {
+                    const data = snap.val();
+                    if(data.password === p) {
+                        if(data.banned) {
+                            err.innerText = "ACCESS DENIED: ACCOUNT BANNED";
+                            return;
+                        }
+                        finalizeLogin({ username: u, ...data });
+                    } else {
+                        err.innerText = "INVALID PASSPHRASE";
                     }
-                    loginSuccess({ username: u, ...data });
                 } else {
-                    document.getElementById('login-error').innerText = "Invalid Password";
+                    err.innerText = "USER NOT WHITELISTED";
                 }
-            } else {
-                document.getElementById('login-error').innerText = "User not found in whitelist.";
+            } catch(e) {
+                console.error(e);
+                err.innerText = "CONNECTION ERROR";
             }
         };
 
-        function loginSuccess(user) {
-            currentUser = user;
-            localStorage.setItem('dw_user', JSON.stringify(user));
+        function finalizeLogin(userObj) {
+            me = userObj;
+            localStorage.setItem('dwellicon_user', JSON.stringify(me));
             
-            document.getElementById('login-layer').classList.add('hidden');
-            document.getElementById('app-layer').classList.remove('hidden');
-            
-            // Init UI
-            document.getElementById('current-user-nick').innerText = user.nick || user.username;
-            document.getElementById('current-user-role').innerText = user.role.toUpperCase();
-            document.getElementById('current-user-pfp').src = user.pfp || "https://cdn-icons-png.flaticon.com/512/847/847969.png";
-            
-            // Init Admin Tools
-            if(user.role === 'owner' || user.role === 'admin') {
-                const tools = document.getElementById('admin-tools-panel');
-                tools.innerHTML = `<button class="btn btn-primary btn-sm" onclick="openJoinServerModal()">+ New Server</button>`;
-                if(user.role === 'owner') {
-                    tools.innerHTML += `<button class="btn btn-danger btn-sm" onclick="document.getElementById('modal-admin-maker').style.display='flex'">Owner Console</button>`;
-                }
+            // Hide Login, Show App (Use flex/grid classes)
+            document.getElementById('login-layer').style.display = 'none';
+            document.getElementById('app-layer').classList.remove('hidden'); // Grid takes over
+
+            // Setup UI
+            document.getElementById('my-nick').innerText = me.nick || me.username;
+            document.getElementById('my-role').innerText = `[${me.role.toUpperCase()}]`;
+            document.getElementById('my-pfp').src = me.pfp || "https://cdn-icons-png.flaticon.com/512/1077/1077114.png";
+
+            if(me.role === 'owner' || me.role === 'admin') {
+                document.getElementById('admin-tools-area').classList.remove('hidden');
             }
 
-            // Presence
-            const presRef = ref(db, 'presence/' + user.username);
-            set(presRef, { online: true, lastSeen: Date.now() });
-            window.addEventListener('beforeunload', () => remove(presRef));
+            // Presence System
+            const presenceRef = ref(db, `presence/${me.username}`);
+            set(presenceRef, { online: true, lastSeen: Date.now() });
+            // Remove on disconnect
+            window.addEventListener('beforeunload', () => remove(presenceRef));
 
-            initListeners();
+            initRealtimeListeners();
         }
 
         window.logout = () => {
-            if(currentUser) remove(ref(db, 'presence/' + currentUser.username));
-            localStorage.removeItem('dw_user');
+            if(me) remove(ref(db, `presence/${me.username}`));
+            localStorage.removeItem('dwellicon_user');
             location.reload();
         };
 
-        // --- LOGIC: SERVERS ---
-        function initListeners() {
-            // 1. Listen for Servers
-            onValue(ref(db, 'servers'), (snap) => {
-                const list = document.getElementById('server-list-container');
-                list.innerHTML = "";
+        // --- REALTIME DATA ---
+        function initRealtimeListeners() {
+            // 1. USERS CACHE (For looking up PFP/Nicks in chat)
+            onValue(ref(db, 'users'), snap => usersCache = snap.val() || {});
+
+            // 2. SERVERS LIST
+            onValue(ref(db, 'servers'), snap => {
+                const wrapper = document.getElementById('server-list-wrapper');
+                wrapper.innerHTML = ""; // Clean refresh
                 const servers = snap.val() || {};
                 
-                // Always show Public servers. Only show Private if user joined.
                 Object.entries(servers).forEach(([id, s]) => {
-                    const isPrivate = s.type === 'private';
-                    const hasJoined = (currentUser.joinedServers && currentUser.joinedServers[id]) || currentUser.role === 'owner'; // Owners see all
-                    
-                    if (!isPrivate || hasJoined) {
-                        const el = document.createElement('div');
-                        el.className = `server-icon ${currentServerId === id ? 'active' : ''}`;
-                        el.innerHTML = s.img ? `<img src="${s.img}">` : s.name.substring(0,2).toUpperCase();
-                        el.onclick = () => switchServer(id, s);
-                        list.appendChild(el);
+                    const isJoined = (me.joinedServers && me.joinedServers[id]) || me.role === 'owner';
+                    const isPublic = s.type === 'public';
+
+                    if(isPublic || isJoined) {
+                        const div = document.createElement('div');
+                        div.className = `server-icon ${currentServer === id ? 'active' : ''}`;
+                        // If image exists use it, else initials
+                        if(s.img) {
+                            div.innerHTML = `<img src="${s.img}">`;
+                        } else {
+                            div.innerText = s.name.substring(0,2).toUpperCase();
+                        }
+                        div.title = s.name;
+                        div.onclick = () => switchServer(id, s);
+                        wrapper.appendChild(div);
                     }
                 });
-                
-                // Select first server if none
-                if(!currentServerId && Object.keys(servers).length > 0) {
-                    const first = Object.keys(servers)[0];
-                    switchServer(first, servers[first]);
-                }
-            });
 
-            // 2. Listen for Users (for caching nicknames/pfps)
-            onValue(ref(db, 'users'), snap => {
-                usersCache = snap.val() || {};
+                // Auto-select first if null
+                if(!currentServer && Object.keys(servers).length > 0) {
+                    const firstId = Object.keys(servers)[0];
+                    // Check access before switching
+                    if(servers[firstId].type === 'public' || (me.joinedServers && me.joinedServers[firstId]) || me.role === 'owner') {
+                        switchServer(firstId, servers[firstId]);
+                    }
+                }
             });
         }
 
-        window.switchServer = (id, data) => {
-            currentServerId = id;
-            document.getElementById('current-server-name').innerText = data.name;
-            document.getElementById('chat-channel-name').innerText = data.name;
+        // --- SERVER LOGIC ---
+        window.switchServer = (id, sData) => {
+            currentServer = id;
             
-            // Private Code Logic
-            const codeDisp = document.getElementById('private-code-display');
-            if(data.type === 'private' && (currentUser.role === 'admin' || currentUser.role === 'owner')) {
-                codeDisp.style.display = 'block';
-                codeDisp.innerText = `Invite: ${data.inviteCode}`;
+            // UI Update (Active class)
+            const icons = document.querySelectorAll('.server-icon');
+            icons.forEach(i => i.classList.remove('active'));
+            // We rely on the onValue re-render to set active class, but for instant feedback:
+            // (Optional: Find the element and add class manually if you want instant feel)
+
+            document.getElementById('active-server-name').innerText = sData.name.toUpperCase();
+            
+            // Show Code if Private & Admin
+            const codeSpan = document.getElementById('server-invite-code');
+            if(sData.type === 'private' && (me.role === 'admin' || me.role === 'owner')) {
+                codeSpan.style.display = 'inline-block';
+                codeSpan.innerText = `CODE: ${sData.inviteCode}`;
             } else {
-                codeDisp.style.display = 'none';
+                codeSpan.style.display = 'none';
             }
 
             loadMessages(id);
-            loadMembers(id); // Just loads global members for now, simple logic
+            loadMembers(); // Refresh members list logic
+        };
+
+        // --- CHAT ENGINE ---
+        let msgListener = null; // To detach old listeners if we wanted to be strict
+
+        function loadMessages(srvId) {
+            const feed = document.getElementById('message-feed');
+            feed.innerHTML = '<div style="text-align:center; color:#555; margin-top:20px;">Establishing Uplink...</div>';
+            
+            onValue(ref(db, `messages/${srvId}`), (snap) => {
+                feed.innerHTML = "";
+                const data = snap.val() || {};
+                
+                Object.entries(data).forEach(([mid, m]) => {
+                    // Get sender info from cache or message fallback
+                    const uData = usersCache[m.sender] || {};
+                    const nick = uData.nick || m.sender;
+                    const pfp = uData.pfp || "https://cdn-icons-png.flaticon.com/512/1077/1077114.png";
+                    
+                    const isMe = m.sender === me.username;
+                    const canMod = me.role === 'owner' || me.role === 'admin';
+
+                    const div = document.createElement('div');
+                    div.className = 'msg';
+                    div.innerHTML = `
+                        <img src="${pfp}" class="msg-avatar" onclick="alert('${nick} - ${uData.bio || 'No bio'}')">
+                        <div class="msg-content">
+                            <div class="msg-top">
+                                <span class="msg-name">${nick}</span>
+                                <span>${new Date(m.ts).toLocaleTimeString()}</span>
+                            </div>
+                            <div style="line-height:1.4;">${m.text}</div>
+                            ${renderAttachment(m.attachment)}
+                            ${canMod ? `<div style="margin-top:5px; font-size:0.7em; color:red; cursor:pointer;" onclick="deleteMsg('${mid}')">[DELETE RECORD]</div>` : ''}
+                        </div>
+                    `;
+                    feed.appendChild(div);
+                });
+                
+                // Scroll to bottom
+                feed.scrollTop = feed.scrollHeight;
+            });
+        }
+
+        function renderAttachment(att) {
+            if(!att) return '';
+            // Check if image
+            const isImg = att.type.includes('image');
+            if(isImg) {
+                return `<img src="${att.url}" class="attachment-img" onclick="window.open('${att.url}')">`;
+            } else {
+                return `<a href="${att.url}" target="_blank" class="attachment-file">📄 DOWNLOAD: ${att.name}</a>`;
+            }
+        }
+
+        // --- MESSAGING & UPLOAD ---
+        window.sendText = () => {
+            const inp = document.getElementById('chat-input');
+            const txt = inp.value.trim();
+            if(!txt || !currentServer) return;
+            
+            // Push to DB
+            push(ref(db, `messages/${currentServer}`), {
+                sender: me.username,
+                text: txt,
+                ts: Date.now()
+            });
+            inp.value = "";
+        };
+
+        // Handle Enter Key
+        document.getElementById('chat-input').addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') window.sendText();
+        });
+
+        window.uploadAndSend = async () => {
+            const fileInput = document.getElementById('file-upload');
+            const file = fileInput.files[0];
+            if(!file) return;
+
+            // Validation
+            if(file.size > 10 * 1024 * 1024) {
+                alert("ERROR: File exceeds 10MB limit.");
+                fileInput.value = ""; 
+                return;
+            }
+
+            // Visual Feedback
+            const inp = document.getElementById('chat-input');
+            const originalPlaceholder = inp.placeholder;
+            inp.placeholder = `UPLOADING ${file.name}... (PLEASE WAIT)`;
+            inp.disabled = true;
+
+            try {
+                // Upload to Storage
+                const storageRef = sRef(storage, `uploads/${Date.now()}_${file.name}`);
+                await uploadBytes(storageRef, file);
+                const url = await getDownloadURL(storageRef);
+
+                // Send Message with Attachment Data
+                push(ref(db, `messages/${currentServer}`), {
+                    sender: me.username,
+                    text: `Attached file: ${file.name}`,
+                    ts: Date.now(),
+                    attachment: {
+                        name: file.name,
+                        type: file.type,
+                        url: url
+                    }
+                });
+            } catch(e) {
+                console.error(e);
+                alert("Upload Failed. Check console.");
+            } finally {
+                // Reset UI
+                inp.placeholder = originalPlaceholder;
+                inp.disabled = false;
+                fileInput.value = ""; // Allow re-selecting same file
+            }
+        };
+
+        window.deleteMsg = (mid) => {
+            if(confirm("Confirm deletion?")) {
+                remove(ref(db, `messages/${currentServer}/${mid}`));
+            }
+        };
+
+        // --- MEMBER LIST ---
+        function loadMembers() {
+            // We just list all users in DB, marking online ones
+            onValue(ref(db, 'users'), async (snap) => {
+                const list = document.getElementById('members-list-wrapper');
+                list.innerHTML = "";
+                
+                const allUsers = snap.val() || {};
+                const presSnap = await get(ref(db, 'presence'));
+                const onlineData = presSnap.val() || {};
+
+                Object.entries(allUsers).forEach(([uid, data]) => {
+                    const isOnline = onlineData[uid];
+                    const div = document.createElement('div');
+                    div.className = 'member-item';
+                    div.innerHTML = `
+                        <div class="status-dot" style="background: ${isOnline ? '#2ecc71' : '#555'}"></div>
+                        <img src="${data.pfp || 'https://cdn-icons-png.flaticon.com/512/1077/1077114.png'}" style="width:24px; height:24px; border-radius:50%;">
+                        <span style="font-weight:bold; color:${isOnline ? 'white' : '#777'}">${data.nick || uid}</span>
+                        ${(me.role === 'owner' || me.role === 'admin') && uid !== me.username ? `<span style="margin-left:auto; color:red;" onclick="banUser('${uid}')">🚫</span>` : ''}
+                    `;
+                    list.appendChild(div);
+                });
+            });
+        }
+
+        window.banUser = (uid) => {
+            if(confirm(`BAN ${uid}? They will be disconnected.`)) {
+                update(ref(db, `users/${uid}`), { banned: true });
+            }
+        };
+
+        // --- OWNER/ADMIN MODALS ---
+        window.openOwnerConsole = () => {
+            if(me.role !== 'owner') return alert("ACCESS DENIED");
+            document.getElementById('modal-owner').style.display = 'flex';
+        };
+
+        window.ownerCreateUser = () => {
+            const u = document.getElementById('mk-user').value;
+            const p = document.getElementById('mk-pass').value;
+            const r = document.getElementById('mk-role').value;
+
+            if(!u || !p) return;
+
+            set(ref(db, 'users/' + u), {
+                username: u,
+                password: p,
+                role: r,
+                nick: u,
+                pfp: "",
+                banned: false
+            });
+            alert("USER AUTHORIZED");
+            closeModals();
+        };
+
+        // --- SERVER MODAL LOGIC ---
+        window.openServerModal = () => {
+            if(me.role === 'user') return alert("INSUFFICIENT PERMISSIONS");
+            document.getElementById('modal-server').style.display = 'flex';
+        };
+        window.toggleServerMode = (mode) => {
+            if(mode === 'create') {
+                document.getElementById('form-create').classList.remove('hidden');
+                document.getElementById('form-join').classList.add('hidden');
+            } else {
+                document.getElementById('form-create').classList.add('hidden');
+                document.getElementById('form-join').classList.remove('hidden');
+            }
         };
 
         window.createServer = () => {
-            if(currentUser.role === 'user') return alert("Admins Only!");
+            const name = document.getElementById('new-srv-name').value;
+            const img = document.getElementById('new-srv-img').value;
+            const type = document.getElementById('new-srv-type').value;
+            if(!name) return;
+
+            const newRef = push(ref(db, 'servers'));
+            const code = Math.random().toString(36).substring(2, 8).toUpperCase();
             
-            const name = document.getElementById('new-server-name').value;
-            const img = document.getElementById('new-server-img').value;
-            const type = document.getElementById('new-server-type').value;
-            const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-
-            if(!name) return alert("Name required");
-
-            const srvRef = push(ref(db, 'servers'));
-            set(srvRef, {
-                name, img, type, inviteCode,
-                owner: currentUser.username
+            set(newRef, {
+                name, img, type, inviteCode: code, owner: me.username
             });
-
             closeModals();
         };
 
         window.joinServer = async () => {
             const code = document.getElementById('join-code').value.trim().toUpperCase();
-            // Find server with this code
             const snap = await get(ref(db, 'servers'));
-            let foundId = null;
-            snap.forEach(child => {
-                if(child.val().inviteCode === code) foundId = child.key;
+            let found = null;
+            
+            snap.forEach(c => {
+                if(c.val().inviteCode === code) found = c.key;
             });
 
-            if(foundId) {
-                // Add to user's joined list
-                await update(ref(db, `users/${currentUser.username}/joinedServers`), { [foundId]: true });
-                // Refresh local user
-                currentUser.joinedServers = currentUser.joinedServers || {};
-                currentUser.joinedServers[foundId] = true;
-                localStorage.setItem('dw_user', JSON.stringify(currentUser));
-                alert("Joined!");
+            if(found) {
+                await update(ref(db, `users/${me.username}/joinedServers`), { [found]: true });
+                // Update local state
+                me.joinedServers = me.joinedServers || {};
+                me.joinedServers[found] = true;
+                localStorage.setItem('dwellicon_user', JSON.stringify(me));
+                alert("SERVER LINK ESTABLISHED");
                 closeModals();
             } else {
-                alert("Invalid Code");
+                alert("INVALID FREQUENCY CODE");
             }
-        };
-
-        // --- LOGIC: CHAT ---
-        function loadMessages(srvId) {
-            const container = document.getElementById('messages-container');
-            // Detach old listener? In a robust app yes, here we just overwrite
-            onValue(ref(db, `messages/${srvId}`), (snap) => {
-                container.innerHTML = "";
-                const msgs = snap.val() || {};
-                Object.entries(msgs).forEach(([mid, m]) => {
-                    renderMessage(mid, m, container);
-                });
-                container.scrollTop = container.scrollHeight;
-            });
-        }
-
-        function renderMessage(mid, m, container) {
-            const isMe = m.sender === currentUser.username;
-            const canMod = currentUser.role === 'owner' || currentUser.role === 'admin';
-            
-            // Resolve user data from cache or message snapshot
-            const uData = usersCache[m.sender] || { nick: m.sender, pfp: "" };
-            
-            const div = document.createElement('div');
-            div.className = 'msg';
-            div.innerHTML = `
-                <img src="${uData.pfp || 'https://cdn-icons-png.flaticon.com/512/847/847969.png'}" class="msg-avatar" onclick="showUserCard('${m.sender}')">
-                <div class="msg-content">
-                    <div class="msg-meta">
-                        <span class="msg-user">${uData.nick || m.sender}</span>
-                        <span class="msg-date">${new Date(m.ts).toLocaleString()}</span>
-                        ${canMod ? `<span class="mod-btn" onclick="deleteMsg('${mid}')">DELETE</span>` : ''}
-                    </div>
-                    <div class="msg-text">${m.text || ''}</div>
-                    ${m.attachment ? `
-                        <div class="msg-attachment">
-                            ${m.attachment.type.startsWith('image') 
-                                ? `<img src="${m.attachment.url}">` 
-                                : `<a href="${m.attachment.url}" target="_blank" class="msg-attachment-file">📎 Download File (${m.attachment.name})</a>`
-                            }
-                        </div>
-                    ` : ''}
-                    <div class="msg-tools">
-                        <button class="reaction-btn" onclick="react('${mid}', '❤️')">❤️ ${m.reactions?.['❤️'] || 0}</button>
-                        <button class="reaction-btn" onclick="react('${mid}', '😂')">😂 ${m.reactions?.['😂'] || 0}</button>
-                        <button class="reaction-btn" onclick="react('${mid}', '👍')">👍 ${m.reactions?.['👍'] || 0}</button>
-                    </div>
-                </div>
-            `;
-            container.appendChild(div);
-        }
-
-        // --- SENDING ---
-        window.handleFileSelect = () => {
-            const file = document.getElementById('file-input').files[0];
-            if(file) {
-                if(file.size > 10 * 1024 * 1024) return alert("File too big (10MB Max)");
-                sendMessage(file);
-            }
-        };
-
-        window.sendMessage = async (fileObj = null) => {
-            // Check if muted/banned locally (real security needs DB rules)
-            if(currentUser.role === 'banned') return alert("You are banned.");
-
-            const input = document.getElementById('message-input');
-            const txt = input.value;
-            
-            if((!txt && !fileObj) || !currentServerId) return;
-
-            let attachment = null;
-            if(fileObj) {
-                const storageRef = sRef(storage, `uploads/${Date.now()}_${fileObj.name}`);
-                await uploadBytes(storageRef, fileObj);
-                const url = await getDownloadURL(storageRef);
-                attachment = { type: fileObj.type, url: url, name: fileObj.name };
-            }
-
-            push(ref(db, `messages/${currentServerId}`), {
-                sender: currentUser.username,
-                text: txt,
-                ts: Date.now(),
-                attachment: attachment
-            });
-
-            input.value = "";
-            if(fileObj) document.getElementById('file-input').value = ""; // reset file
-        };
-
-        window.deleteMsg = (mid) => {
-            if(confirm("Delete message?")) remove(ref(db, `messages/${currentServerId}/${mid}`));
-        };
-
-        window.react = (mid, emoji) => {
-            const rRef = ref(db, `messages/${currentServerId}/${mid}/reactions/${emoji}`);
-            get(rRef).then(s => set(rRef, (s.val() || 0) + 1));
-        };
-
-        // --- MEMBERS & MODERATION ---
-        function loadMembers(srvId) {
-            onValue(ref(db, 'users'), (snap) => {
-                const cont = document.getElementById('member-sidebar');
-                cont.innerHTML = `<div class="member-group-title">MEMBERS</div>`;
-                const users = snap.val() || {};
-                
-                Object.entries(users).forEach(([uid, u]) => {
-                    // Check online status via 'presence' node
-                    get(ref(db, `presence/${uid}`)).then(pSnap => {
-                        const isOnline = pSnap.exists();
-                        const div = document.createElement('div');
-                        div.className = `member-card ${isOnline ? 'online' : ''}`;
-                        div.innerHTML = `
-                            <div style="position:relative">
-                                <img src="${u.pfp || 'https://cdn-icons-png.flaticon.com/512/847/847969.png'}" class="member-avatar">
-                                <div class="member-status"></div>
-                            </div>
-                            <div style="flex:1">
-                                <div style="font-weight:bold; font-size:14px;">${u.nick || uid}</div>
-                                <div style="font-size:10px;">${u.bio || ''}</div>
-                            </div>
-                            ${ (currentUser.role === 'owner' || currentUser.role === 'admin') && uid !== currentUser.username ? 
-                                `<button class="btn btn-danger btn-sm" style="padding:2px 4px;" onclick="banKickUser('${uid}')">⚠️</button>` : '' 
-                            }
-                        `;
-                        cont.appendChild(div);
-                    });
-                });
-            });
-        }
-
-        window.banKickUser = (targetUid) => {
-            if(!confirm(`Ban ${targetUid}? This prevents them from logging in.`)) return;
-            update(ref(db, `users/${targetUid}`), { banned: true });
-            alert(`${targetUid} has been banned.`);
-        };
-
-        // --- OWNER TOOLS ---
-        window.ownerCreateAccount = () => {
-            if(currentUser.role !== 'owner') return;
-            const u = document.getElementById('mk-user').value;
-            const p = document.getElementById('mk-pass').value;
-            const r = document.getElementById('mk-role').value;
-            
-            set(ref(db, 'users/' + u), {
-                password: p,
-                role: r,
-                nick: u,
-                pfp: "",
-                joinedServers: {}
-            });
-            alert("Account created!");
-            closeModals();
         };
 
         // --- PROFILE ---
+        window.openProfile = () => document.getElementById('modal-profile').style.display = 'flex';
         window.saveProfile = () => {
             const n = document.getElementById('edit-nick').value;
             const b = document.getElementById('edit-bio').value;
             const p = document.getElementById('edit-pfp').value;
             
-            update(ref(db, `users/${currentUser.username}`), {
-                nick: n, bio: b, pfp: p
-            });
+            const updates = { nick: n, bio: b, pfp: p };
+            update(ref(db, `users/${me.username}`), updates);
             
-            // Update local
-            currentUser.nick = n; currentUser.bio = b; currentUser.pfp = p;
-            localStorage.setItem('dw_user', JSON.stringify(currentUser));
+            // Local update
+            Object.assign(me, updates);
+            localStorage.setItem('dwellicon_user', JSON.stringify(me));
+            
+            // Refresh UI immediately
+            document.getElementById('my-nick').innerText = n || me.username;
+            document.getElementById('my-pfp').src = p || "https://cdn-icons-png.flaticon.com/512/1077/1077114.png";
+            
             closeModals();
         };
 
-        // --- UI HELPERS ---
-        window.openJoinServerModal = () => document.getElementById('modal-join-server').style.display = 'flex';
-        window.openCreateServerModal = () => document.getElementById('modal-create-server').style.display = 'flex';
-        window.openProfileModal = () => document.getElementById('modal-profile').style.display = 'flex';
-        window.closeModals = () => document.querySelectorAll('.modal-overlay').forEach(e => e.style.display = 'none');
-        
-        // Enter key send
-        document.getElementById('message-input').addEventListener('keypress', (e) => {
-            if(e.key === 'Enter') sendMessage();
-        });
+        window.closeModals = () => document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
 
-        // Auto-Login Check
-        const saved = localStorage.getItem('dw_user');
+        // --- AUTO LOGIN ---
+        const saved = localStorage.getItem('dwellicon_user');
         if(saved) {
             const sUser = JSON.parse(saved);
-            // verify not banned in background
-            get(ref(db, 'users/' + sUser.username)).then(snap => {
+            // Verify not banned
+            get(ref(db, `users/${sUser.username}`)).then(snap => {
                 if(snap.exists() && snap.val().banned) {
-                    localStorage.removeItem('dw_user');
-                    alert("You have been banned.");
-                    location.reload();
+                    alert("ACCOUNT BANNED");
+                    localStorage.removeItem('dwellicon_user');
                 } else {
-                    loginSuccess(sUser);
+                    finalizeLogin(sUser);
                 }
-            });
+            }).catch(() => finalizeLogin(sUser)); // Offline fallback
         }
 
     </script>
