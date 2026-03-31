@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dwellicon Chat</title>
+    <style>
+        /* --- CSS RESET & VARIABLES --- */
+        :root {
+            --bg-dark: #202225;
+            --bg-sidebar: #2f3136;
+            --bg-chat: #36393f;
+            --bg-member: #2f3136;
+            --bg-input: #40444b;
+            --text-main: #dcddde;
+            --text-header: #ffffff;
+            --accent: #5865F2;
+            --danger: #ed4245;
+            --success: #3ba55c;
+            --hover: #393c43;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: var(--bg-dark); color: var(--text-main); height: 100vh; overflow: hidden; }
+        
+        /* --- UTILS --- */
+        .hidden { display: none !important; }
+        .btn { padding: 8px 16px; border-radius: 4px; border: none; cursor: pointer; color: white; font-weight: bold; transition: 0.2s; }
+        .btn-primary { background-color: var(--accent); }
+        .btn-primary:hover { background-color: #4752c4; }
+        .btn-danger { background-color: var(--danger); }
+        .btn-sm { padding: 4px 8px; font-size: 12px; }
+        input, select, textarea { background: #202225; border: 1px solid #202225; color: white; padding: 8px; border-radius: 4px; width: 100%; outline: none; margin-bottom: 10px; }
+        input:focus { border-color: var(--accent); }
+
+        /* --- LOGIN SCREEN --- */
+        #login-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-chat); z-index: 1000; display: flex; align-items: center; justify-content: center; background-image: url('https://i.imgur.com/X9f9d4k.png'); background-size: cover; }
+        .login-box { background: #2f3136; padding: 30px; border-radius: 8px; width: 400px; box-shadow: 0 2px 10px 0 rgba(0,0,0,0.2); text-align: center; }
+        .login-box h2 { color: white; margin-bottom: 20px; }
+
+        /* --- MAIN LAYOUT --- */
+        #app-layer { display: flex; height: 100vh; }
+        
+        /* 1. Server Sidebar (Left) */
+        #server-sidebar { width: 72px; background: #202225; display: flex; flex-direction: column; align-items: center; padding: 12px 0; overflow-y: auto; gap: 8px; }
+        .server-icon { width: 48px; height: 48px; border-radius: 50%; background-color: #36393f; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; color: white; font-weight: bold; font-size: 14px; overflow: hidden; position: relative; }
+        .server-icon:hover { border-radius: 16px; background-color: var(--accent); }
+        .server-icon.active { border-radius: 16px; background-color: var(--accent); }
+        .server-icon img { width: 100%; height: 100%; object-fit: cover; }
+        .sep { width: 32px; height: 2px; background-color: #36393f; margin: 0 auto; }
+
+        /* 2. Channel/Info Sidebar (Middle-Left) */
+        #channel-sidebar { width: 240px; background: var(--bg-sidebar); display: flex; flex-direction: column; }
+        .server-header { padding: 12px 16px; border-bottom: 1px solid #202225; font-weight: bold; color: white; box-shadow: 0 1px 0 rgba(4,4,5,0.2); display: flex; justify-content: space-between; align-items: center; }
+        .user-area { margin-top: auto; background: #292b2f; padding: 10px; display: flex; align-items: center; gap: 10px; }
+        .user-pfp-sm { width: 32px; height: 32px; border-radius: 50%; background: gray; object-fit: cover; }
+        .user-details { flex: 1; overflow: hidden; }
+        .username { display: block; font-weight: bold; color: white; font-size: 14px; }
+        .user-discriminator { display: block; color: #b9bbbe; font-size: 12px; }
+        .server-actions { padding: 10px; display: flex; flex-direction: column; gap: 5px; }
+
+        /* 3. Chat Area (Center) */
+        #chat-area { flex: 1; background: var(--bg-chat); display: flex; flex-direction: column; position: relative; }
+        .chat-header { padding: 12px 16px; border-bottom: 1px solid #26272d; font-weight: bold; color: white; display: flex; align-items: center; box-shadow: 0 1px 0 rgba(4,4,5,0.06); }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+        
+        /* Messages */
+        .msg { display: flex; gap: 16px; padding: 2px 0; }
+        .msg:hover { background: #32353b; }
+        .msg-avatar { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; background: #5865F2; object-fit: cover; }
+        .msg-content { flex: 1; }
+        .msg-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .msg-user { color: white; font-weight: 500; cursor: pointer; }
+        .msg-user:hover { text-decoration: underline; }
+        .msg-date { color: #72767d; font-size: 12px; }
+        .msg-text { color: #dcddde; white-space: pre-wrap; line-height: 1.375rem; }
+        .msg-attachment { margin-top: 8px; max-width: 400px; border-radius: 4px; overflow: hidden; }
+        .msg-attachment img { max-width: 100%; height: auto; display: block; }
+        .msg-attachment-file { background: #2f3136; padding: 10px; border: 1px solid #202225; border-radius: 4px; display: flex; align-items: center; gap: 10px; color: var(--accent); text-decoration: none; width: fit-content; }
+        
+        /* Reactions & Tools */
+        .msg-tools { display: flex; gap: 5px; margin-top: 5px; }
+        .reaction-btn { background: #2f3136; border: 1px solid transparent; color: #b9bbbe; border-radius: 4px; padding: 2px 6px; font-size: 12px; cursor: pointer; }
+        .reaction-btn:hover { border-color: #72767d; }
+        .reaction-btn.active { background: rgba(88, 101, 242, 0.15); border-color: var(--accent); color: var(--accent); }
+        .mod-btn { color: var(--danger); font-size: 10px; cursor: pointer; margin-left: 10px; opacity: 0; }
+        .msg:hover .mod-btn { opacity: 1; }
+
+        /* Input */
+        .chat-input-wrapper { padding: 0 16px 24px; background: var(--bg-chat); }
+        .chat-input-box { background: var(--bg-input); border-radius: 8px; padding: 10px; display: flex; align-items: center; gap: 10px; }
+        .file-upload-btn { width: 24px; height: 24px; background: #b9bbbe; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #40444b; font-weight: bold; cursor: pointer; font-size: 20px; line-height: 0; }
+        #message-input { background: transparent; border: none; margin: 0; padding: 0; height: 20px; color: white; font-size: 1rem; }
+
+        /* 4. Member Sidebar (Right) */
+        #member-sidebar { width: 240px; background: #2f3136; padding: 20px 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+        .member-group-title { color: #96989d; font-size: 12px; font-weight: bold; text-transform: uppercase; margin-bottom: 10px; padding-left: 8px; }
+        .member-card { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 4px; cursor: pointer; color: #8e9297; opacity: 0.7; }
+        .member-card.online { opacity: 1; color: #dcddde; }
+        .member-card:hover { background-color: var(--hover); color: white; }
+        .member-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); object-fit: cover; }
+        .member-status { width: 10px; height: 10px; border-radius: 50%; background: gray; border: 2px solid #2f3136; position: absolute; bottom: -2px; right: -2px; }
+        .online .member-status { background: var(--success); }
+
+        /* --- MODALS --- */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; display: none; align-items: center; justify-content: center; }
+        .modal { background: #36393f; padding: 20px; border-radius: 8px; width: 400px; color: white; }
+        .modal-header { font-size: 20px; font-weight: bold; margin-bottom: 15px; }
+        .close-modal { float: right; cursor: pointer; color: #aaa; }
+    </style>
+</head>
+<body>
+
+    <!-- 1. LOGIN -->
+    <div id="login-layer">
+        <div class="login-box">
+            <h2>Welcome Back!</h2>
+            <p style="color:#b9bbbe; margin-bottom: 20px;">We're so excited to see you again!</p>
+            <div style="text-align: left;">
+                <label style="font-size:12px; font-weight:bold; color:#b9bbbe; text-transform:uppercase;">Username</label>
+                <input type="text" id="login-user">
+                <label style="font-size:12px; font-weight:bold; color:#b9bbbe; text-transform:uppercase;">Password</label>
+                <input type="password" id="login-pass">
+            </div>
+            <button class="btn btn-primary" style="width: 100%;" onclick="handleLogin()">Log In</button>
+            <p id="login-error" style="color: var(--danger); margin-top: 10px; font-size: 14px;"></p>
+        </div>
+    </div>
+
+    <!-- 2. APP INTERFACE -->
+    <div id="app-layer" class="hidden">
+        <!-- Server List -->
+        <nav id="server-sidebar">
+            <div class="server-icon" onclick="openJoinServerModal()">+</div>
+            <div class="sep"></div>
+            <div id="server-list-container"></div>
+        </nav>
+
+        <!-- Channel/Server Info -->
+        <aside id="channel-sidebar">
+            <div class="server-header" id="current-server-name">Home</div>
+            
+            <!-- Admin Tools Section -->
+            <div class="server-actions" id="admin-tools-panel">
+                <!-- Injected via JS if admin -->
+            </div>
+
+            <div class="user-area">
+                <img id="current-user-pfp" src="" class="user-pfp-sm">
+                <div class="user-details">
+                    <span id="current-user-nick" class="username">User</span>
+                    <span id="current-user-role" class="user-discriminator">Role</span>
+                </div>
+                <button onclick="openProfileModal()" class="btn btn-sm" style="background:#4f545c;">⚙️</button>
+                <button onclick="logout()" class="btn btn-sm" style="background:var(--danger);">Exit</button>
+            </div>
+        </aside>
+
+        <!-- Chat -->
+        <main id="chat-area">
+            <div class="chat-header">
+                <span style="font-size: 24px; color:#72767d; margin-right: 8px;">#</span>
+                <span id="chat-channel-name">general</span>
+                <span id="private-code-display" style="margin-left: auto; font-size: 12px; color: var(--success); display: none; background: #202225; padding: 4px 8px; border-radius: 4px;"></span>
+            </div>
+            
+            <div id="messages-container" class="chat-messages">
+                <!-- Messages Go Here -->
+            </div>
+
+            <div class="chat-input-wrapper">
+                <div class="chat-input-box">
+                    <div class="file-upload-btn" onclick="document.getElementById('file-input').click()">+</div>
+                    <input type="file" id="file-input" class="hidden" onchange="handleFileSelect()">
+                    <input type="text" id="message-input" placeholder="Message #general">
+                </div>
+            </div>
+        </main>
+
+        <!-- Members -->
+        <aside id="member-sidebar">
+            <!-- Members Go Here -->
+        </aside>
+    </div>
+
+    <!-- 3. MODALS -->
+    <!-- Profile Modal -->
+    <div id="modal-profile" class="modal-overlay">
+        <div class="modal">
+            <span class="close-modal" onclick="closeModals()">✕</span>
+            <div class="modal-header">Edit Profile</div>
+            <label>Nickname</label> <input type="text" id="edit-nick">
+            <label>Bio</label> <textarea id="edit-bio" rows="3" style="width:100%; background:#202225; color:white; border:none; padding:8px;"></textarea>
+            <label>Profile Picture URL</label> <input type="text" id="edit-pfp">
+            <button class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
+        </div>
+    </div>
+
+    <!-- Create Server Modal -->
+    <div id="modal-create-server" class="modal-overlay">
+        <div class="modal">
+            <span class="close-modal" onclick="closeModals()">✕</span>
+            <div class="modal-header">Create a Server</div>
+            <label>Server Name</label> <input type="text" id="new-server-name">
+            <label>Server Image URL</label> <input type="text" id="new-server-img">
+            <label>Visibility</label>
+            <select id="new-server-type">
+                <option value="public">Public (Everyone sees)</option>
+                <option value="private">Private (Invite Code Only)</option>
+            </select>
+            <button class="btn btn-primary" onclick="createServer()">Create Server</button>
+        </div>
+    </div>
+
+    <!-- Join Server Modal -->
+    <div id="modal-join-server" class="modal-overlay">
+        <div class="modal">
+            <span class="close-modal" onclick="closeModals()">✕</span>
+            <div class="modal-header">Add a Server</div>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button class="btn btn-primary" style="flex:1" onclick="openCreateServerModal()">Create New</button>
+                <button class="btn" style="flex:1; background:#4f545c;" onclick="document.getElementById('join-section').classList.remove('hidden')">Join Private</button>
+            </div>
+            <div id="join-section" class="hidden">
+                <label>Invite Code</label> <input type="text" id="join-code" placeholder="ENTER-CODE-HERE">
+                <button class="btn btn-success" style="width:100%; background:var(--success);" onclick="joinServer()">Join Server</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Owner Admin Maker Modal -->
+    <div id="modal-admin-maker" class="modal-overlay">
+        <div class="modal">
+            <span class="close-modal" onclick="closeModals()">✕</span>
+            <div class="modal-header">Owner Console</div>
+            <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">Create a new account. Only Kyson can do this.</p>
+            <label>Username</label> <input type="text" id="mk-user">
+            <label>Password</label> <input type="text" id="mk-pass">
+            <label>Role</label>
+            <select id="mk-role">
+                <option value="user">User (Chat Only)</option>
+                <option value="admin">Admin (Kick/Ban/Servers)</option>
+            </select>
+            <button class="btn btn-primary" onclick="ownerCreateAccount()">Create Account</button>
+        </div>
+    </div>
+
+    <!-- SCRIPT -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue, remove, get, update, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+        // --- CONFIG ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAulcwmA2r2Z0Wv5mxyuWwQvPv05E8HvMU",
+            authDomain: "dwellicon-42e72.firebaseapp.com",
+            databaseURL: "https://dwellicon-42e72-default-rtdb.firebaseio.com",
+            projectId: "dwellicon-42e72",
+            storageBucket: "dwellicon-42e72.firebasestorage.app",
+            messagingSenderId: "634657717896",
+            appId: "1:634657717896:web:27f246614fdb2c2398a93d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const storage = getStorage(app);
+
+        // --- STATE ---
+        let currentUser = null;
+        let currentServerId = null;
+        let usersCache = {};
+
+        // --- AUTH ---
+        window.handleLogin = async () => {
+            const u = document.getElementById('login-user').value.trim();
+            const p = document.getElementById('login-pass').value.trim();
+
+            // 1. Hardcoded Backdoor for Owner
+            if(u === "Kyson" && p === "12345678") {
+                loginSuccess({
+                    username: "Kyson",
+                    role: "owner",
+                    nick: "Kyson",
+                    pfp: "https://cdn-icons-png.flaticon.com/512/147/147142.png",
+                    bio: "The Owner"
+                });
+                return;
+            }
+
+            // 2. Whitelist Check
+            const snapshot = await get(ref(db, 'users/' + u));
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                if (data.password === p) {
+                    if(data.banned) {
+                        document.getElementById('login-error').innerText = "You have been BANNED.";
+                        return;
+                    }
+                    loginSuccess({ username: u, ...data });
+                } else {
+                    document.getElementById('login-error').innerText = "Invalid Password";
+                }
+            } else {
+                document.getElementById('login-error').innerText = "User not found in whitelist.";
+            }
+        };
+
+        function loginSuccess(user) {
+            currentUser = user;
+            localStorage.setItem('dw_user', JSON.stringify(user));
+            
+            document.getElementById('login-layer').classList.add('hidden');
+            document.getElementById('app-layer').classList.remove('hidden');
+            
+            // Init UI
+            document.getElementById('current-user-nick').innerText = user.nick || user.username;
+            document.getElementById('current-user-role').innerText = user.role.toUpperCase();
+            document.getElementById('current-user-pfp').src = user.pfp || "https://cdn-icons-png.flaticon.com/512/847/847969.png";
+            
+            // Init Admin Tools
+            if(user.role === 'owner' || user.role === 'admin') {
+                const tools = document.getElementById('admin-tools-panel');
+                tools.innerHTML = `<button class="btn btn-primary btn-sm" onclick="openJoinServerModal()">+ New Server</button>`;
+                if(user.role === 'owner') {
+                    tools.innerHTML += `<button class="btn btn-danger btn-sm" onclick="document.getElementById('modal-admin-maker').style.display='flex'">Owner Console</button>`;
+                }
+            }
+
+            // Presence
+            const presRef = ref(db, 'presence/' + user.username);
+            set(presRef, { online: true, lastSeen: Date.now() });
+            window.addEventListener('beforeunload', () => remove(presRef));
+
+            initListeners();
+        }
+
+        window.logout = () => {
+            if(currentUser) remove(ref(db, 'presence/' + currentUser.username));
+            localStorage.removeItem('dw_user');
+            location.reload();
+        };
+
+        // --- LOGIC: SERVERS ---
+        function initListeners() {
+            // 1. Listen for Servers
+            onValue(ref(db, 'servers'), (snap) => {
+                const list = document.getElementById('server-list-container');
+                list.innerHTML = "";
+                const servers = snap.val() || {};
+                
+                // Always show Public servers. Only show Private if user joined.
+                Object.entries(servers).forEach(([id, s]) => {
+                    const isPrivate = s.type === 'private';
+                    const hasJoined = (currentUser.joinedServers && currentUser.joinedServers[id]) || currentUser.role === 'owner'; // Owners see all
+                    
+                    if (!isPrivate || hasJoined) {
+                        const el = document.createElement('div');
+                        el.className = `server-icon ${currentServerId === id ? 'active' : ''}`;
+                        el.innerHTML = s.img ? `<img src="${s.img}">` : s.name.substring(0,2).toUpperCase();
+                        el.onclick = () => switchServer(id, s);
+                        list.appendChild(el);
+                    }
+                });
+                
+                // Select first server if none
+                if(!currentServerId && Object.keys(servers).length > 0) {
+                    const first = Object.keys(servers)[0];
+                    switchServer(first, servers[first]);
+                }
+            });
+
+            // 2. Listen for Users (for caching nicknames/pfps)
+            onValue(ref(db, 'users'), snap => {
+                usersCache = snap.val() || {};
+            });
+        }
+
+        window.switchServer = (id, data) => {
+            currentServerId = id;
+            document.getElementById('current-server-name').innerText = data.name;
+            document.getElementById('chat-channel-name').innerText = data.name;
+            
+            // Private Code Logic
+            const codeDisp = document.getElementById('private-code-display');
+            if(data.type === 'private' && (currentUser.role === 'admin' || currentUser.role === 'owner')) {
+                codeDisp.style.display = 'block';
+                codeDisp.innerText = `Invite: ${data.inviteCode}`;
+            } else {
+                codeDisp.style.display = 'none';
+            }
+
+            loadMessages(id);
+            loadMembers(id); // Just loads global members for now, simple logic
+        };
+
+        window.createServer = () => {
+            if(currentUser.role === 'user') return alert("Admins Only!");
+            
+            const name = document.getElementById('new-server-name').value;
+            const img = document.getElementById('new-server-img').value;
+            const type = document.getElementById('new-server-type').value;
+            const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+            if(!name) return alert("Name required");
+
+            const srvRef = push(ref(db, 'servers'));
+            set(srvRef, {
+                name, img, type, inviteCode,
+                owner: currentUser.username
+            });
+
+            closeModals();
+        };
+
+        window.joinServer = async () => {
+            const code = document.getElementById('join-code').value.trim().toUpperCase();
+            // Find server with this code
+            const snap = await get(ref(db, 'servers'));
+            let foundId = null;
+            snap.forEach(child => {
+                if(child.val().inviteCode === code) foundId = child.key;
+            });
+
+            if(foundId) {
+                // Add to user's joined list
+                await update(ref(db, `users/${currentUser.username}/joinedServers`), { [foundId]: true });
+                // Refresh local user
+                currentUser.joinedServers = currentUser.joinedServers || {};
+                currentUser.joinedServers[foundId] = true;
+                localStorage.setItem('dw_user', JSON.stringify(currentUser));
+                alert("Joined!");
+                closeModals();
+            } else {
+                alert("Invalid Code");
+            }
+        };
+
+        // --- LOGIC: CHAT ---
+        function loadMessages(srvId) {
+            const container = document.getElementById('messages-container');
+            // Detach old listener? In a robust app yes, here we just overwrite
+            onValue(ref(db, `messages/${srvId}`), (snap) => {
+                container.innerHTML = "";
+                const msgs = snap.val() || {};
+                Object.entries(msgs).forEach(([mid, m]) => {
+                    renderMessage(mid, m, container);
+                });
+                container.scrollTop = container.scrollHeight;
+            });
+        }
+
+        function renderMessage(mid, m, container) {
+            const isMe = m.sender === currentUser.username;
+            const canMod = currentUser.role === 'owner' || currentUser.role === 'admin';
+            
+            // Resolve user data from cache or message snapshot
+            const uData = usersCache[m.sender] || { nick: m.sender, pfp: "" };
+            
+            const div = document.createElement('div');
+            div.className = 'msg';
+            div.innerHTML = `
+                <img src="${uData.pfp || 'https://cdn-icons-png.flaticon.com/512/847/847969.png'}" class="msg-avatar" onclick="showUserCard('${m.sender}')">
+                <div class="msg-content">
+                    <div class="msg-meta">
+                        <span class="msg-user">${uData.nick || m.sender}</span>
+                        <span class="msg-date">${new Date(m.ts).toLocaleString()}</span>
+                        ${canMod ? `<span class="mod-btn" onclick="deleteMsg('${mid}')">DELETE</span>` : ''}
+                    </div>
+                    <div class="msg-text">${m.text || ''}</div>
+                    ${m.attachment ? `
+                        <div class="msg-attachment">
+                            ${m.attachment.type.startsWith('image') 
+                                ? `<img src="${m.attachment.url}">` 
+                                : `<a href="${m.attachment.url}" target="_blank" class="msg-attachment-file">📎 Download File (${m.attachment.name})</a>`
+                            }
+                        </div>
+                    ` : ''}
+                    <div class="msg-tools">
+                        <button class="reaction-btn" onclick="react('${mid}', '❤️')">❤️ ${m.reactions?.['❤️'] || 0}</button>
+                        <button class="reaction-btn" onclick="react('${mid}', '😂')">😂 ${m.reactions?.['😂'] || 0}</button>
+                        <button class="reaction-btn" onclick="react('${mid}', '👍')">👍 ${m.reactions?.['👍'] || 0}</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+        }
+
+        // --- SENDING ---
+        window.handleFileSelect = () => {
+            const file = document.getElementById('file-input').files[0];
+            if(file) {
+                if(file.size > 10 * 1024 * 1024) return alert("File too big (10MB Max)");
+                sendMessage(file);
+            }
+        };
+
+        window.sendMessage = async (fileObj = null) => {
+            // Check if muted/banned locally (real security needs DB rules)
+            if(currentUser.role === 'banned') return alert("You are banned.");
+
+            const input = document.getElementById('message-input');
+            const txt = input.value;
+            
+            if((!txt && !fileObj) || !currentServerId) return;
+
+            let attachment = null;
+            if(fileObj) {
+                const storageRef = sRef(storage, `uploads/${Date.now()}_${fileObj.name}`);
+                await uploadBytes(storageRef, fileObj);
+                const url = await getDownloadURL(storageRef);
+                attachment = { type: fileObj.type, url: url, name: fileObj.name };
+            }
+
+            push(ref(db, `messages/${currentServerId}`), {
+                sender: currentUser.username,
+                text: txt,
+                ts: Date.now(),
+                attachment: attachment
+            });
+
+            input.value = "";
+            if(fileObj) document.getElementById('file-input').value = ""; // reset file
+        };
+
+        window.deleteMsg = (mid) => {
+            if(confirm("Delete message?")) remove(ref(db, `messages/${currentServerId}/${mid}`));
+        };
+
+        window.react = (mid, emoji) => {
+            const rRef = ref(db, `messages/${currentServerId}/${mid}/reactions/${emoji}`);
+            get(rRef).then(s => set(rRef, (s.val() || 0) + 1));
+        };
+
+        // --- MEMBERS & MODERATION ---
+        function loadMembers(srvId) {
+            onValue(ref(db, 'users'), (snap) => {
+                const cont = document.getElementById('member-sidebar');
+                cont.innerHTML = `<div class="member-group-title">MEMBERS</div>`;
+                const users = snap.val() || {};
+                
+                Object.entries(users).forEach(([uid, u]) => {
+                    // Check online status via 'presence' node
+                    get(ref(db, `presence/${uid}`)).then(pSnap => {
+                        const isOnline = pSnap.exists();
+                        const div = document.createElement('div');
+                        div.className = `member-card ${isOnline ? 'online' : ''}`;
+                        div.innerHTML = `
+                            <div style="position:relative">
+                                <img src="${u.pfp || 'https://cdn-icons-png.flaticon.com/512/847/847969.png'}" class="member-avatar">
+                                <div class="member-status"></div>
+                            </div>
+                            <div style="flex:1">
+                                <div style="font-weight:bold; font-size:14px;">${u.nick || uid}</div>
+                                <div style="font-size:10px;">${u.bio || ''}</div>
+                            </div>
+                            ${ (currentUser.role === 'owner' || currentUser.role === 'admin') && uid !== currentUser.username ? 
+                                `<button class="btn btn-danger btn-sm" style="padding:2px 4px;" onclick="banKickUser('${uid}')">⚠️</button>` : '' 
+                            }
+                        `;
+                        cont.appendChild(div);
+                    });
+                });
+            });
+        }
+
+        window.banKickUser = (targetUid) => {
+            if(!confirm(`Ban ${targetUid}? This prevents them from logging in.`)) return;
+            update(ref(db, `users/${targetUid}`), { banned: true });
+            alert(`${targetUid} has been banned.`);
+        };
+
+        // --- OWNER TOOLS ---
+        window.ownerCreateAccount = () => {
+            if(currentUser.role !== 'owner') return;
+            const u = document.getElementById('mk-user').value;
+            const p = document.getElementById('mk-pass').value;
+            const r = document.getElementById('mk-role').value;
+            
+            set(ref(db, 'users/' + u), {
+                password: p,
+                role: r,
+                nick: u,
+                pfp: "",
+                joinedServers: {}
+            });
+            alert("Account created!");
+            closeModals();
+        };
+
+        // --- PROFILE ---
+        window.saveProfile = () => {
+            const n = document.getElementById('edit-nick').value;
+            const b = document.getElementById('edit-bio').value;
+            const p = document.getElementById('edit-pfp').value;
+            
+            update(ref(db, `users/${currentUser.username}`), {
+                nick: n, bio: b, pfp: p
+            });
+            
+            // Update local
+            currentUser.nick = n; currentUser.bio = b; currentUser.pfp = p;
+            localStorage.setItem('dw_user', JSON.stringify(currentUser));
+            closeModals();
+        };
+
+        // --- UI HELPERS ---
+        window.openJoinServerModal = () => document.getElementById('modal-join-server').style.display = 'flex';
+        window.openCreateServerModal = () => document.getElementById('modal-create-server').style.display = 'flex';
+        window.openProfileModal = () => document.getElementById('modal-profile').style.display = 'flex';
+        window.closeModals = () => document.querySelectorAll('.modal-overlay').forEach(e => e.style.display = 'none');
+        
+        // Enter key send
+        document.getElementById('message-input').addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') sendMessage();
+        });
+
+        // Auto-Login Check
+        const saved = localStorage.getItem('dw_user');
+        if(saved) {
+            const sUser = JSON.parse(saved);
+            // verify not banned in background
+            get(ref(db, 'users/' + sUser.username)).then(snap => {
+                if(snap.exists() && snap.val().banned) {
+                    localStorage.removeItem('dw_user');
+                    alert("You have been banned.");
+                    location.reload();
+                } else {
+                    loginSuccess(sUser);
+                }
+            });
+        }
+
+    </script>
+</body>
+</html>
